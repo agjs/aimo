@@ -158,7 +158,8 @@ Suggested defaults: ~1 MiB raw body, ~48k output chars, ~15s timeout. No merged 
 
 ### Sequencing
 
-- **Depends on:** HTTP providers wired for real completions (beyond `fake`), plus **Phase E** (or a thin v0 orchestrator that only allows one hard-coded worker role to prove the pattern).
+- **Slice 1 (done):** Generic `workers` + `pipeline.shrinkers` after execute, OpenAI-compat HTTP port, `workers.json`, `--no-keep-raw`. Spec: [`spec-cheap-workers.md`](./spec-cheap-workers.md).
+- **Next:** Phase E tool loops, parallel shrinker policy, budget hooks (`EXIT_BUDGET_EXCEEDED`), cost fields in sidecar.
 - **Parallel track:** Phase D (local) and Phase F (remote cheap) can coexist; config chooses per role.
 
 ---
@@ -180,10 +181,10 @@ Suggested defaults: ~1 MiB raw body, ~48k output chars, ~15s timeout. No merged 
 - **Milestone A–C** in [`roadmap.md`](./roadmap.md) stay the spine; **Phase A** can land as a small addition once approved.
 - Vector **RAG** remains **out of scope** as written until an ADR promotes it.
 - **Milestone C** builtin executor **amplifies** Phase B/E (sandboxed read/write).
-- **Phase F** aligns with **multi-profile** story already in the product vision; needs **Zod config** + **ADR** for `workers` / `subagents` shape before coding.
+- **Phase F** slice 1 is specified in [`spec-cheap-workers.md`](./spec-cheap-workers.md) and implemented in the CLI (`workers`, shrinkers, OpenRouter/OpenAI-compat HTTP).
 
 ---
 
 ## Execution gate
 
-Do **not** implement until plan mode is off and you give an explicit go (e.g. “Implement **Phase A** per `docs/ai/plan-token-local-optimization.md`”). Later phases get separate execution calls unless you scope “through Phase B” in one PR.
+Phases **A–E** and further Phase F slices: implement only when explicitly scoped in chat (see roadmap). Phase F slice 1 (cheap shrinkers) is **implemented** per [`spec-cheap-workers.md`](./spec-cheap-workers.md).

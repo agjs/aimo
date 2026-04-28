@@ -57,6 +57,8 @@ describe('delegated execute (integration)', () => {
       gitDiffBefore: before.ok ? before.text : '',
       gitDiffAfter: after.ok ? after.text : '',
       executeResultJson: '{}\n',
+      executeStdout: spawned.stdout,
+      executeStderr: spawned.stderr,
     });
   });
 });

@@ -43,5 +43,6 @@ export async function spawnCli(
   const stdout = await new Response(proc.stdout).text();
   const stderr = await new Response(proc.stderr).text();
   const exitCode = await proc.exited;
+
   return { exitCode, stdout, stderr };
 }

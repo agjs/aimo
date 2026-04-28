@@ -2,13 +2,13 @@
 
 End-to-end guide for the `aimo` CLI: install, configure, run, inspect.
 
-This document describes the **complete** product (current commands plus the `workers` / `pipeline.shrinkers` layer being added). Sections marked **Planned** are not yet on `main`; see [`docs/ai/roadmap.md`](docs/ai/roadmap.md) for status.
+This document describes the shipped CLI, including **`workers`** and **`pipeline.shrinkers`**. See [`docs/ai/roadmap.md`](docs/ai/roadmap.md) for what is next.
 
 - [Install](#install)
 - [Configuration](#configuration)
 - [The pipeline at a glance](#the-pipeline-at-a-glance)
 - [Commands](#commands)
-- [Cheap subagents (workers)](#cheap-subagents-workers) **Planned**
+- [Cheap subagents (workers)](#cheap-subagents-workers)
 - [Run-directory layout](#run-directory-layout)
 - [Exit codes](#exit-codes)
 - [Recipes](#recipes)
@@ -214,7 +214,7 @@ aimo run "Resume run 9f3c8e22" --run 9f3c8e22 --from execute
 aimo run "Re-review only" --run 9f3c8e22 --from review --to review
 aimo run "..." --dry-run                 # validate config only, no artifacts
 aimo run "..." --json
-aimo run "..." --no-keep-raw             # see "Cheap subagents" below (Planned)
+aimo run "..." --no-keep-raw             # delete raw context files after shrinking (overrides YAML)
 ```
 
 `--dry-run` validates: stage range parses, profile is present, plan/execute/review providers resolve, run-id is safe (when not starting at plan), workers and shrinker references resolve.
@@ -223,7 +223,7 @@ aimo run "..." --no-keep-raw             # see "Cheap subagents" below (Planned)
 
 ## Cheap subagents (workers) <a id="cheap-subagents-workers"></a>
 
-> **Planned — see [`docs/ai/spec-cheap-workers.md`](docs/ai/spec-cheap-workers.md).** Lands together as a single feature.
+Spec and acceptance criteria: [`docs/ai/spec-cheap-workers.md`](docs/ai/spec-cheap-workers.md).
 
 The expensive model should never read raw command output. The pattern: **cheap workers** read large blobs (logs, diffs, fetch bodies, grep hits) and emit bounded summaries that the expensive model consumes through delimited `DATA` blocks.
 
@@ -322,16 +322,16 @@ A successful `aimo run` with shrinkers configured:
   plan.md                              # planner output
   manifest.json                        # plan stage record
   execute.result.json                  # exit + argv + diff capture errors
-  execute.stdout                       # raw, kept by default (Planned)
+  execute.stdout                       # raw, kept by default unless --no-keep-raw
   execute.stderr
   execute.git_diff_after.diff
-  execute.stdout.shrunk.md             # what review actually read (Planned)
+  execute.stdout.shrunk.md             # what review actually read when shrinkers ran
   execute.stderr.shrunk.md
   execute.git_diff_after.shrunk.md
   git.diff.before.txt                  # repo state before execute
   git.diff.after.txt                   # repo state after execute
   review.md                            # ends with VERDICT: ...
-  workers.json                         # one row per worker call (Planned)
+  workers.json                         # one row per worker call
 ```
 
 Without shrinkers: only the raw / current files exist; review reads the diff straight.

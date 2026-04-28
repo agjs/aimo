@@ -4,6 +4,7 @@
  * @description Zod schema and safe-parse helper for `aimo` YAML configuration (no file I/O).
  */
 
+import { CONTEXT_SOURCE_VALUES } from '@core/contextSources/ContextSource.constants';
 import { z } from 'zod';
 
 /**
@@ -42,6 +43,30 @@ const profileSchema = z.object({
   review: llmStageSchema.optional(),
 });
 
+/** Cheap-model profile for `pipeline.shrinkers` (OpenAI-compatible HTTP or `fake`). */
+export const workerProfileSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  base_url: z.string().url().optional(),
+  max_chars_in: z.number().int().positive().max(2_000_000).default(200_000),
+  max_chars_out: z.number().int().positive().max(500_000).default(8_000),
+});
+
+/** One named worker entry under top-level `workers:`. */
+export type TWorkerProfile = z.infer<typeof workerProfileSchema>;
+
+const pipelineSchema = z.object({
+  keep_raw: z.boolean().default(true),
+  shrinkers: z
+    .array(
+      z.object({
+        source: z.enum(CONTEXT_SOURCE_VALUES),
+        worker: z.string().min(1),
+      }),
+    )
+    .default([]),
+});
+
 /**
  * Root schema for merged user + project YAML.
  * @see {@link mergeConfigRecordLayers} for precedence.
@@ -51,6 +76,8 @@ export const aimoConfigSchema = z
     schema_version: z.literal(1).default(1),
     default_profile: z.string().min(1).default('default'),
     profiles: z.record(z.string(), profileSchema).default({}),
+    workers: z.record(z.string(), workerProfileSchema).default({}),
+    pipeline: pipelineSchema.default({ keep_raw: true, shrinkers: [] }),
   })
   .superRefine((data, ctx) => {
     const names = Object.keys(data.profiles);
@@ -61,6 +88,23 @@ export const aimoConfigSchema = z
         message: `default_profile "${data.default_profile}" is not defined in profiles (${names.join(', ')})`,
         path: ['default_profile'],
       });
+    }
+
+    for (let i = 0; i < data.pipeline.shrinkers.length; i++) {
+      const entry = data.pipeline.shrinkers[i];
+      const wname = entry?.worker;
+
+      if (wname === undefined) {
+        continue;
+      }
+
+      if (!Object.hasOwn(data.workers, wname)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `pipeline.shrinkers[${String(i)}].worker "${wname}" is not defined in workers`,
+          path: ['pipeline', 'shrinkers', i, 'worker'],
+        });
+      }
     }
   });
 
@@ -85,5 +129,6 @@ export function safeParseAimoConfig(
     const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
     return `${path}${issue.message}`;
   });
+
   return { ok: false, messages };
 }

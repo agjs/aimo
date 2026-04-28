@@ -39,5 +39,6 @@ export function resolvePlanStageForProfile(
     model: profile.plan.model,
     ...(profile.plan.base_url !== undefined ? { base_url: profile.plan.base_url } : {}),
   };
+
   return { ok: true, plan };
 }

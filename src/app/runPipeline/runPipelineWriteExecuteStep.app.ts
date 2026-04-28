@@ -106,6 +106,8 @@ export async function writeRunPipelineExecuteStep(input: {
     gitDiffBefore: beforeDiff.ok ? beforeDiff.text : '',
     gitDiffAfter: afterDiff.ok ? afterDiff.text : '',
     executeResultJson: serializeExecuteResultJson(executeRecord),
+    executeStdout: spawned.stdout,
+    executeStderr: spawned.stderr,
   });
 
   if (spawned.exitCode !== 0) {

@@ -6,7 +6,10 @@
 
 import { EXIT_OPERATIONAL_ERROR, EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
 import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
+import { serializeWorkersSidecarJson } from '@core/workers/SerializeWorkersSidecar.behavior';
+import { writeWorkersSidecarJson } from '@runtime/bun/WorkersSidecarJson.bun';
 
+import { runPipelineApplyShrinkers } from './runPipelineApplyShrinkers.app';
 import { buildSuccessfulRunJsonSummary } from './runPipelineBuildSuccessJsonSummary.app';
 import { runDryRunPipeline } from './runPipelineDryRun.app';
 import { emitExecuteSpawnFailure } from './runPipelineEmitExecuteFailure.app';
@@ -80,6 +83,19 @@ async function runPipelineStagesWrite(options: TRunPipelineOptions): Promise<num
   }
 
   const executeForHumanAndJson = execResult.outcome === 'ok' ? execResult.execute : null;
+
+  if (execResult.outcome === 'ok' && slice.needExec && ctx.loaded.shrinkers.length > 0) {
+    const { calls } = await runPipelineApplyShrinkers({
+      runDir: ctx.paths.runDir,
+      aimoConfig: ctx.loaded.aimoConfig,
+      shrinkers: ctx.loaded.shrinkers,
+      keepRaw: ctx.loaded.keepRaw,
+    });
+    await writeWorkersSidecarJson(
+      ctx.paths.runDir,
+      serializeWorkersSidecarJson({ schema_version: 1, run_id: ctx.runId, calls }),
+    );
+  }
 
   const revResult = await runPipelineReviewWritePhase(ctx);
 

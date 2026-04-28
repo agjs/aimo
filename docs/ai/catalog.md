@@ -13,7 +13,7 @@
 | `commands/plan.command.ts` | `aimo plan` / `--json` — planner chat, `.aimo/runs/<id>/plan.md` + `manifest.json` (fake provider for now). |
 | `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
 | `commands/review.command.ts` | `aimo review --run <id>` — reviewer chat, `review.md`, process exit from `VERDICT` (`0` / `2` / `3`). |
-| `commands/run.command.ts` | `aimo run` / `--dry-run` / `--json` — thin wrapper around `runAimoRunPipeline`. |
+| `commands/run.command.ts` | `aimo run` / `--dry-run` / `--json` / `--no-keep-raw` — thin wrapper around `runAimoRunPipeline`. |
 | `orchestrateRunPipeline.app.ts` | Re-exports `runPipeline/` (stable import path for `aimo run`). |
 | `runPipeline/runPipelineOrchestrator.app.ts` | Sequences plan / execute / review slices; exit codes per `ExitCodes`. |
 | `runPipeline/runPipelineTypes.app.ts` | `TRunPipelineOptions` (+ re-exports `TPipelineStageName`). |
@@ -25,14 +25,16 @@
 | `runPipeline/runPipelineEmitHumanWriteComplete.app.ts` | Human stdout when slice ends (plan-only, execute-only, review). |
 | `runPipeline/runPipelineDryRun.app.ts` | `--dry-run` validation for `aimo run`. |
 | `runPipeline/runPipelineLoadStages.app.ts` | Load merged config + resolve plan/execute/review bindings. |
-| `runPipeline/runPipelineChats.app.ts` | Select `IChatCompletionPort` from YAML provider ids. |
+| `runPipeline/runPipelineChats.app.ts` | Select `IChatCompletionPort` for plan/review/workers (`fake`, `openrouter`, `openai-compat`). |
+| `runPipeline/runPipelineApplyShrinkers.app.ts` | After execute: run `pipeline.shrinkers` via cheap `IChatCompletionPort`, write `*.shrunk.md`, optional raw delete. |
+| `runPipeline/runPipelineReviewContext.app.ts` | Load diff + transcript for review (prefer `*.shrunk.md`). |
 | `runPipeline/resolveRunIdForPipelineSlice.app.ts` | Resolve or validate `.aimo/runs/<id>/` for a slice. |
 | `runPipeline/runPipelineWritePlanStep.app.ts` | Planner chat + `plan.md` / manifest write. |
 | `runPipeline/runPipelineWriteExecuteStep.app.ts` | Delegated spawn + diff / execute result artifacts. |
 | `runPipeline/runPipelineWriteReviewStep.app.ts` | Reviewer chat + `review.md`. |
 | `runPipeline/formatGitDiffHeadError.app.ts` | Merge optional `git diff HEAD` capture errors. |
 | `runPipeline/formatStageSliceForHumans.app.ts` | Human-readable `plan → execute` slice label. |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, stage `assert*` wiring including `assertRunPipelineWired`. |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider`, `OpenAiCompatChatProvider` factory, stage `assert*` wiring including `assertRunPipelineWired`. |
 
 ## `src/core/`
 
@@ -43,7 +45,7 @@
 | `config/DotEnvParse.behavior.ts` | Pure `.env` text → map parser. |
 | `config/EnvPrecedence.behavior.ts` | Pure merge of env maps (process wins over files). |
 | `config/deepMergeRecord.behavior.ts` | Deep-merge YAML roots; project `aimo.yaml` overlays user `config.yaml`. |
-| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML; `PLAN_PATH_TEMPLATE_TOKEN` for argv + stdin sentinel. |
+| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML; `workers`, `pipeline.shrinkers`, `PLAN_PATH_TEMPLATE_TOKEN` for argv + stdin sentinel. |
 | `config/AimoInitTemplates.behavior.ts` | Commented starter YAML strings for `aimo init` (validated against schema). |
 | `lifecycle/CleanupRegistry.behavior.ts` | Pure LIFO cleanup registration (signals wired in `runtime/`). |
 | `chat/ChatCompletion.types.ts` | OpenAI-shaped chat completion request/response types (non-streaming v1). |
@@ -66,6 +68,16 @@
 | `execute/isSafeRunDirectoryName.behavior.ts` | Reject unsafe `.aimo/runs/<id>/` directory names. |
 | `execute/ResolveDelegatedExecute.behavior.ts` | Resolve `profiles.*.execute` when `type: delegated`. |
 | `execute/substitutePlanPathInArgv.behavior.ts` | Replace `{plan_path}` in argv strings. |
+| `contextSources/ContextSource.constants.ts` | Shrinkable source enum (`execute.stdout`, …). |
+| `contextSources/ContextSourcePaths.behavior.ts` | Map source id → raw / shrunk basenames under a run dir. |
+| `openaiCompat/BuildOpenAiChatPayload.behavior.ts` | Pure OpenAI `chat/completions` JSON body builder. |
+| `openaiCompat/ParseOpenAiChatResponse.behavior.ts` | Parse OpenAI-shaped completion JSON into port types. |
+| `workers/BuildWorkerMessages.behavior.ts` | Worker shrinker system + user messages (DATA block). |
+| `workers/FormatWorkerDataBlock.behavior.ts` | Delimited untrusted blob wrapper for worker prompts. |
+| `workers/FirstShrinkerPerSource.behavior.ts` | Deduplicate shrinkers (first row per `source` wins). |
+| `workers/ResolveWorker.behavior.ts` | Resolve `workers.<name>` from merged config. |
+| `workers/SerializeWorkersSidecar.behavior.ts` | Pretty JSON for `workers.json` sidecar. |
+| `workers/TruncateWorkerInput.behavior.ts` | Cap worker prompt input by character length. |
 
 ## `src/features/`
 
@@ -73,6 +85,7 @@
 | ------ | ---------------- |
 | `planStage.feature.ts` | `runPlanChat` — one completion via `IChatCompletionPort` + `buildPlanMessages`. |
 | `reviewStage.feature.ts` | `runReviewChat` — one completion via `IChatCompletionPort` + `buildReviewMessages`. |
+| `workersStage.feature.ts` | `runWorkerChat` — one shrinker completion (truncate in/out, usage metadata). |
 | `runPipeline.feature.ts` | Re-exports pipeline stage hooks for composition; full `aimo run` lives under `app/`. |
 
 ## `src/providers/`
@@ -80,6 +93,7 @@
 | Module | Responsibility |
 | ------ | ---------------- |
 | `fake/InProcessFakeChat.provider.ts` | Deterministic in-process `IChatCompletionPort` (no network). |
+| `openaiCompat/OpenAiCompatChat.provider.ts` | `IChatCompletionPort` over `IHttpPort` + OpenAI-compatible JSON. |
 
 ## `src/runtime/bun/`
 
@@ -92,7 +106,8 @@
 | `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse. |
 | `GitDiffHead.bun.ts` | `readGitDiffHeadText` — `git diff HEAD` capture for execute stage. |
 | `DelegatedSpawn.bun.ts` | `runDelegatedArgv` — `Bun.spawn` argv-only, optional stdin from `Bun.file`. |
-| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts`, `writeReviewMarkdown`. |
+| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts` (+ stdout/stderr raw), `writeReviewMarkdown`. |
+| `WorkersSidecarJson.bun.ts` | Write `.aimo/runs/<id>/workers.json`. |
 
 ## `src/shared/`
 
@@ -107,7 +122,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `run`, `execute`, `review`, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `run`, `execute`, `review`, workers/shrinkers, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
-| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |
+| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `openAiCompatChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |

@@ -13,8 +13,14 @@ import {
   type TPipelineStageName,
   resolvePipelineStageRange,
 } from '@core/run/resolvePipelineStageRange.behavior';
+import { firstShrinkerWorkerPerSource } from '@core/workers/FirstShrinkerPerSource.behavior';
+import { resolveWorkerProfile } from '@core/workers/ResolveWorker.behavior';
 
-import { selectPlanChatPortForRun, selectReviewChatPortForRun } from './runPipelineChats.app';
+import {
+  selectPlanChatPortForRun,
+  selectReviewChatPortForRun,
+  selectWorkerChatPortForRun,
+} from './runPipelineChats.app';
 
 /** Standard validation result without side effects. */
 export type TValidation = { readonly ok: true } | { readonly ok: false; readonly message: string };
@@ -121,12 +127,12 @@ export function validatePlanStageForRun(cfg: TAimoConfig, profileName: string): 
     return { ok: false, message: `${resolvedPlan.message}\n` };
   }
 
-  const planChat = selectPlanChatPortForRun(resolvedPlan.plan.provider);
+  const planChat = selectPlanChatPortForRun(resolvedPlan.plan);
 
   if (!planChat) {
     return {
       ok: false,
-      message: `run: plan provider "${resolvedPlan.plan.provider}" is not supported yet (use provider: fake for now)\n`,
+      message: `run: plan provider "${resolvedPlan.plan.provider}" is not supported or HTTP credentials are missing (use fake, or openrouter / openai-compat with OPENROUTER_API_KEY / OPENAI_API_KEY)\n`,
     };
   }
 
@@ -162,13 +168,65 @@ export function validateReviewStageForRun(cfg: TAimoConfig, profileName: string)
     return { ok: false, message: `${resolvedReview.message}\n` };
   }
 
-  const reviewChat = selectReviewChatPortForRun(resolvedReview.review.provider);
+  const reviewChat = selectReviewChatPortForRun(resolvedReview.review);
 
   if (!reviewChat) {
     return {
       ok: false,
-      message: `run: review provider "${resolvedReview.review.provider}" is not supported yet (use provider: fake for now)\n`,
+      message: `run: review provider "${resolvedReview.review.provider}" is not supported or HTTP credentials are missing (use fake, or openrouter / openai-compat with OPENROUTER_API_KEY / OPENAI_API_KEY)\n`,
     };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Validates `pipeline.shrinkers` references and worker chat ports when execute runs shrinkers.
+ * @param cfg - Merged config.
+ * @param slice - Resolved stage slice.
+ * @returns Ok or stderr-ready message.
+ */
+export function validateWorkersShrinkersForRun(
+  cfg: TAimoConfig,
+  slice: TPipelineSlice,
+): TValidation {
+  const shrinkers = cfg.pipeline.shrinkers;
+
+  if (shrinkers.length === 0) {
+    return { ok: true };
+  }
+
+  const deduped = firstShrinkerWorkerPerSource(shrinkers);
+
+  for (const row of deduped) {
+    const w = resolveWorkerProfile(cfg, row.worker);
+
+    if (!w.ok) {
+      return { ok: false, message: `${w.message}\n` };
+    }
+  }
+
+  const needWorkerPorts = slice.needExec;
+
+  if (!needWorkerPorts) {
+    return { ok: true };
+  }
+
+  for (const row of deduped) {
+    const w = resolveWorkerProfile(cfg, row.worker);
+
+    if (!w.ok) {
+      return { ok: false, message: `${w.message}\n` };
+    }
+
+    const port = selectWorkerChatPortForRun(w.profile);
+
+    if (!port) {
+      return {
+        ok: false,
+        message: `run: worker "${row.worker}" provider "${w.profile.provider}" is not supported or HTTP credentials are missing\n`,
+      };
+    }
   }
 
   return { ok: true };
@@ -203,8 +261,12 @@ export function validateBindingsForSlice(
   }
 
   if (slice.needRev) {
-    return validateReviewStageForRun(cfg, profileName);
+    const r = validateReviewStageForRun(cfg, profileName);
+
+    if (!r.ok) {
+      return r;
+    }
   }
 
-  return { ok: true };
+  return validateWorkersShrinkersForRun(cfg, slice);
 }

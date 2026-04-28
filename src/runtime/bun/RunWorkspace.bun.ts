@@ -9,6 +9,8 @@ import { join } from 'node:path';
 
 import {
   EXECUTE_RESULT_JSON_BASENAME,
+  EXECUTE_STDERR_TXT_BASENAME,
+  EXECUTE_STDOUT_TXT_BASENAME,
   GIT_DIFF_AFTER_BASENAME,
   GIT_DIFF_BEFORE_BASENAME,
   MANIFEST_JSON_FILENAME,
@@ -69,6 +71,8 @@ export async function writePlanArtifacts(
  * @param bodies.gitDiffBefore - `git diff HEAD` text captured before spawn.
  * @param bodies.gitDiffAfter - `git diff HEAD` text captured after spawn.
  * @param bodies.executeResultJson - Pretty JSON for {@link EXECUTE_RESULT_JSON_BASENAME}.
+ * @param bodies.executeStdout - Delegated process stdout (written to `execute.stdout.txt`).
+ * @param bodies.executeStderr - Delegated process stderr (written to `execute.stderr.txt`).
  */
 export async function writeExecuteStageArtifacts(
   runDir: string,
@@ -76,11 +80,15 @@ export async function writeExecuteStageArtifacts(
     readonly gitDiffBefore: string;
     readonly gitDiffAfter: string;
     readonly executeResultJson: string;
+    readonly executeStdout: string;
+    readonly executeStderr: string;
   },
 ): Promise<void> {
   await writeFile(join(runDir, GIT_DIFF_BEFORE_BASENAME), bodies.gitDiffBefore, 'utf8');
   await writeFile(join(runDir, GIT_DIFF_AFTER_BASENAME), bodies.gitDiffAfter, 'utf8');
   await writeFile(join(runDir, EXECUTE_RESULT_JSON_BASENAME), bodies.executeResultJson, 'utf8');
+  await writeFile(join(runDir, EXECUTE_STDOUT_TXT_BASENAME), bodies.executeStdout, 'utf8');
+  await writeFile(join(runDir, EXECUTE_STDERR_TXT_BASENAME), bodies.executeStderr, 'utf8');
 }
 
 /**

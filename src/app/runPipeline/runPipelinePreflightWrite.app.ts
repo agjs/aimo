@@ -62,12 +62,16 @@ export async function preflightRunPipelineWrite(
 
   const runId = runIdRes.runId;
 
+  const pipelineOpts: { readonly keepRaw?: boolean } =
+    options.keepRaw === undefined ? {} : { keepRaw: options.keepRaw };
+
   const loaded = await loadRunPipelineStageBindings(
     options.cwd,
     options.profile,
     slice.needPlan,
     slice.needExec,
     slice.needRev,
+    pipelineOpts,
   );
 
   if (!loaded.ok) {

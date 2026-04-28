@@ -8,29 +8,17 @@ import { join } from 'node:path';
 
 import { EXIT_CONFIG_ERROR, EXIT_OPERATIONAL_ERROR } from '@core/contracts/ExitCodes.constants';
 import { isSafeRunDirectoryName } from '@core/execute/isSafeRunDirectoryName.behavior';
-import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import { ensureVerdictForPersistedReview } from '@core/review/ensureVerdictForPersistedReview.behavior';
 import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
-import { GIT_DIFF_AFTER_BASENAME, REVIEW_MD_FILENAME } from '@core/runs/AimoRunPaths.constants';
+import { REVIEW_MD_FILENAME } from '@core/runs/AimoRunPaths.constants';
 import { runReviewChat } from '@features/reviewStage.feature';
 import { prepareRunArtifactPaths, writeReviewMarkdown } from '@runtime/bun/RunWorkspace.bun';
 import type { Command } from 'commander';
 
-import { createInProcessFakeChatPort, loadResolvedAimoConfig } from '../wireDefaults';
-
-/**
- * Selects chat backend for the review stage (extend when HTTP providers land).
- * @param provider - Value from YAML `profiles.*.review.provider`.
- * @returns Port instance or `null` when unsupported.
- */
-function selectReviewChatPort(provider: string): IChatCompletionPort | null {
-  if (provider === 'fake') {
-    return createInProcessFakeChatPort();
-  }
-
-  return null;
-}
+import { selectReviewChatPortForRun } from '../runPipeline/runPipelineChats.app';
+import { loadReviewDiffAndTranscriptFromRunDir } from '../runPipeline/runPipelineReviewContext.app';
+import { loadResolvedAimoConfig } from '../wireDefaults';
 
 /**
  * Runs one review for an existing run (requires `plan.md` under `.aimo/runs/<id>/`).
@@ -72,11 +60,11 @@ async function runReviewOnce(options: {
   }
 
   const { provider, model } = resolved.review;
-  const chat = selectReviewChatPort(provider);
+  const chat = selectReviewChatPortForRun(resolved.review);
 
   if (!chat) {
     process.stderr.write(
-      `review stage: provider "${provider}" is not supported yet (use provider: fake for now)\n`,
+      `review stage: provider "${provider}" is not supported or HTTP credentials are missing (use fake, or openrouter / openai-compat with API keys)\n`,
     );
     process.exit(EXIT_CONFIG_ERROR);
   }
@@ -91,15 +79,15 @@ async function runReviewOnce(options: {
   }
 
   const planMarkdown = await planFile.text();
-  const diffPath = join(paths.runDir, GIT_DIFF_AFTER_BASENAME);
-  const diffFile = Bun.file(diffPath);
-  const diffMarkdown = (await diffFile.exists()) ? await diffFile.text() : '';
+  const { diffMarkdown, transcriptMarkdown } = await loadReviewDiffAndTranscriptFromRunDir(
+    paths.runDir,
+  );
   const { markdown } = await runReviewChat({
     model,
     chat,
     planMarkdown,
     diffMarkdown,
-    transcriptMarkdown: '',
+    transcriptMarkdown,
   });
   const ensured = ensureVerdictForPersistedReview(markdown, provider);
 

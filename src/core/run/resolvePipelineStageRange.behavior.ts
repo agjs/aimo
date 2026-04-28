@@ -57,5 +57,6 @@ export function resolvePipelineStageRange(
 
   const all: readonly TPipelineStageName[] = ['plan', 'execute', 'review'];
   const stages = all.filter((name) => STAGE_ORDER[name] >= a && STAGE_ORDER[name] <= b);
+
   return { ok: true, stages };
 }

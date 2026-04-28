@@ -10,13 +10,11 @@ import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types'
 import { ensureVerdictForPersistedReview } from '@core/review/ensureVerdictForPersistedReview.behavior';
 import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
 import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
-import {
-  GIT_DIFF_AFTER_BASENAME,
-  PLAN_MD_FILENAME,
-  REVIEW_MD_FILENAME,
-} from '@core/runs/AimoRunPaths.constants';
+import { PLAN_MD_FILENAME, REVIEW_MD_FILENAME } from '@core/runs/AimoRunPaths.constants';
 import { runReviewChat } from '@features/reviewStage.feature';
 import { writeReviewMarkdown } from '@runtime/bun/RunWorkspace.bun';
+
+import { loadReviewDiffAndTranscriptFromRunDir } from './runPipelineReviewContext.app';
 
 /**
  * Outcome of the review stage (persisted markdown + verdict exit mapping).
@@ -51,15 +49,15 @@ export async function writeRunPipelineReviewStep(input: {
   }
 
   const planText = await planFile.text();
-  const diffPath = join(input.runDir, GIT_DIFF_AFTER_BASENAME);
-  const diffFile = Bun.file(diffPath);
-  const diffMarkdown = (await diffFile.exists()) ? await diffFile.text() : '';
+  const { diffMarkdown, transcriptMarkdown } = await loadReviewDiffAndTranscriptFromRunDir(
+    input.runDir,
+  );
   const { markdown: reviewRaw } = await runReviewChat({
     model: input.reviewModel,
     chat: input.reviewChat,
     planMarkdown: planText,
     diffMarkdown,
-    transcriptMarkdown: '',
+    transcriptMarkdown,
   });
   const ensured = ensureVerdictForPersistedReview(reviewRaw, input.reviewProvider);
 

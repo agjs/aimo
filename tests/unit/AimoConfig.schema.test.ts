@@ -70,4 +70,26 @@ describe('safeParseAimoConfig', () => {
     });
     expect(r.ok).toBe(false);
   });
+
+  it('rejects shrinker worker not listed in workers', () => {
+    const r = safeParseAimoConfig({
+      workers: { a: { provider: 'fake', model: 'stub' } },
+      pipeline: { shrinkers: [{ source: 'execute.stdout', worker: 'missing' }] },
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it('accepts workers and pipeline shrinkers', () => {
+    const r = safeParseAimoConfig({
+      workers: { w: { provider: 'fake', model: 'stub', max_chars_in: 1000, max_chars_out: 500 } },
+      pipeline: {
+        keep_raw: true,
+        shrinkers: [
+          { source: 'execute.stdout', worker: 'w' },
+          { source: 'execute.git_diff_after', worker: 'w' },
+        ],
+      },
+    });
+    expect(r.ok).toBe(true);
+  });
 });

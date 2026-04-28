@@ -39,5 +39,6 @@ export function resolveReviewStageForProfile(
     model: profile.review.model,
     ...(profile.review.base_url !== undefined ? { base_url: profile.review.base_url } : {}),
   };
+
   return { ok: true, review };
 }

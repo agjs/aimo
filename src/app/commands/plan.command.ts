@@ -9,30 +9,13 @@ import { randomUUID } from 'node:crypto';
 import { EXIT_CONFIG_ERROR, EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
 import { resolvePlanStageForProfile } from '@core/plan/ResolvePlanStage.behavior';
-import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
 import { prepareRunArtifactPaths, writePlanArtifacts } from '@runtime/bun/RunWorkspace.bun';
 import type { Command } from 'commander';
 
-import {
-  createDefaultClockPort,
-  createInProcessFakeChatPort,
-  loadResolvedAimoConfig,
-} from '../wireDefaults';
-
-/**
- * Selects a chat backend for the plan stage (extend when HTTP providers land).
- * @param provider - Value from YAML `profiles.*.plan.provider`.
- * @returns Port instance or `null` when unsupported.
- */
-function selectPlanChatPort(provider: string): IChatCompletionPort | null {
-  if (provider === 'fake') {
-    return createInProcessFakeChatPort();
-  }
-
-  return null;
-}
+import { selectPlanChatPortForRun } from '../runPipeline/runPipelineChats.app';
+import { createDefaultClockPort, loadResolvedAimoConfig } from '../wireDefaults';
 
 /**
  * Registers `plan` on the root commander program.
@@ -72,11 +55,11 @@ export function registerPlanCommand(program: Command): void {
         }
 
         const { provider, model } = resolved.plan;
-        const chat = selectPlanChatPort(provider);
+        const chat = selectPlanChatPortForRun(resolved.plan);
 
         if (!chat) {
           process.stderr.write(
-            `plan stage: provider "${provider}" is not supported yet (use provider: fake for now)\n`,
+            `plan stage: provider "${provider}" is not supported or HTTP credentials are missing (use fake, or openrouter / openai-compat with API keys)\n`,
           );
           process.exit(EXIT_CONFIG_ERROR);
         }

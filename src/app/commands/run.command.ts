@@ -44,6 +44,10 @@ export function registerRunCommand(program: Command): void {
       '--dry-run',
       'validate config and stages without writing artifacts or calling providers',
     )
+    .option(
+      '--no-keep-raw',
+      'after shrinkers run, delete raw context source files (overrides pipeline.keep_raw)',
+    )
     .action(
       async (
         taskArg: string | undefined,
@@ -55,6 +59,8 @@ export function registerRunCommand(program: Command): void {
           run?: string;
           json?: boolean;
           dryRun?: boolean;
+          /** Set to `false` when `--no-keep-raw` is passed (Commander negated flag). */
+          keepRaw?: boolean;
         },
       ): Promise<void> => {
         const cwd = process.cwd();
@@ -73,6 +79,7 @@ export function registerRunCommand(program: Command): void {
         }
 
         const task = (options.task ?? taskArg ?? '').trim();
+
         const exitCode = await runAimoRunPipeline({
           cwd,
           task,
@@ -82,7 +89,9 @@ export function registerRunCommand(program: Command): void {
           ...(options.run !== undefined ? { runId: options.run } : {}),
           json: options.json === true,
           dryRun: options.dryRun === true,
+          ...(options.keepRaw === false ? { keepRaw: false } : {}),
         });
+
         process.exit(exitCode);
       },
     );

@@ -31,4 +31,9 @@ export type TRunPipelineOptions = {
   readonly json: boolean;
   /** When true, validate config and stages only (no artifacts, no LLM, no spawn). */
   readonly dryRun: boolean;
+  /**
+   * When `false`, delete raw context files after shrinkers write `*.shrunk.md` (`--no-keep-raw`).
+   * When `undefined`, use `pipeline.keep_raw` from merged YAML (default true).
+   */
+  readonly keepRaw?: boolean;
 };

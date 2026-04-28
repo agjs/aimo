@@ -31,7 +31,9 @@ import { relativePlanMdPath, relativeReviewMdPath } from '@core/runs/AimoRunPath
 import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
 import { runReviewChat } from '@features/reviewStage.feature';
+import { runWorkerChat } from '@features/workersStage.feature';
 import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.provider';
+import { OpenAiCompatChatProvider } from '@providers/openaiCompat/OpenAiCompatChat.provider';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
 import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
 import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
@@ -43,7 +45,6 @@ import {
   writeExecuteStageArtifacts,
   writeReviewMarkdown,
 } from '@runtime/bun/RunWorkspace.bun';
-
 /**
  * Creates the default wall-clock port for production-style runs.
  * @returns Bun-backed {@link IClockPort}.
@@ -85,11 +86,51 @@ export function createInProcessFakeChatPort(): IChatCompletionPort {
 }
 
 /**
+ * OpenAI-compatible chat port for `openrouter` / `openai-compat` YAML providers.
+ * Reads API keys from the environment (`OPENROUTER_API_KEY` / `OPENAI_API_KEY`).
+ * @param stage - Provider id plus model and optional `base_url` override.
+ * @param stage.provider - `openrouter` or `openai-compat`.
+ * @param stage.model - Model id for the JSON request body.
+ * @param stage.base_url - Optional API base override (no trailing slash).
+ * @returns HTTP-backed port, or `null` when provider is not HTTP-shaped or keys are missing.
+ */
+export function createOpenAiCompatChatPortFromStage(stage: {
+  readonly provider: string;
+  readonly model: string;
+  readonly base_url?: string | undefined;
+}): IChatCompletionPort | null {
+  if (stage.provider !== 'openrouter' && stage.provider !== 'openai-compat') {
+    return null;
+  }
+
+  const apiKey =
+    stage.provider === 'openrouter'
+      ? (process.env.OPENROUTER_API_KEY?.trim() ?? process.env.OPENAI_API_KEY?.trim() ?? '')
+      : (process.env.OPENAI_API_KEY?.trim() ?? process.env.OPENROUTER_API_KEY?.trim() ?? '');
+
+  if (apiKey.length === 0) {
+    return null;
+  }
+
+  const defaultBase =
+    stage.provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1';
+  const baseUrl = (stage.base_url ?? defaultBase).replace(/\/+$/, '');
+
+  return new OpenAiCompatChatProvider({
+    http: createDefaultHttpPort(),
+    baseUrl,
+    apiKey,
+  });
+}
+
+/**
  * Keeps provider + HTTP port types in the build graph until stages call them.
  */
 export function assertProviderPortsWired(): void {
   void createDefaultHttpPort;
   void createInProcessFakeChatPort;
+  void createOpenAiCompatChatPortFromStage;
+  void OpenAiCompatChatProvider;
 }
 
 /**
@@ -185,6 +226,7 @@ export function assertReviewStageWired(): void {
 export function assertRunPipelineWired(): void {
   void ensureVerdictForPersistedReview('wire\n\nVERDICT: pass\n', 'openai');
   void resolvePipelineStageRange('plan', 'review');
+  void runWorkerChat;
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

@@ -4,12 +4,15 @@
  * @description Load merged YAML and resolve plan / execute / review bindings for `aimo run`.
  */
 
+import type { TAimoConfig, TWorkerProfile } from '@core/config/AimoConfig.schema';
+import type { TContextSource } from '@core/contextSources/ContextSource.constants';
 import { EXIT_CONFIG_ERROR } from '@core/contracts/ExitCodes.constants';
 import type { TResolvedDelegatedExecute } from '@core/execute/ResolveDelegatedExecute.behavior';
 import { resolveDelegatedExecuteForProfile } from '@core/execute/ResolveDelegatedExecute.behavior';
 import { resolvePlanStageForProfile } from '@core/plan/ResolvePlanStage.behavior';
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
+import { firstShrinkerWorkerPerSource } from '@core/workers/FirstShrinkerPerSource.behavior';
 
 import { loadResolvedAimoConfig } from '../wireDefaults';
 import { selectPlanChatPortForRun, selectReviewChatPortForRun } from './runPipelineChats.app';
@@ -26,6 +29,14 @@ export type TRunPipelineLoaded = {
   readonly reviewProvider: string;
   readonly reviewModel: string;
   readonly reviewChat: IChatCompletionPort | null;
+  /** Effective raw-artifact retention (`--no-keep-raw` overrides YAML `pipeline.keep_raw`). */
+  readonly keepRaw: boolean;
+  /** Deduplicated shrinker rows (first wins per `source`). */
+  readonly shrinkers: ReadonlyArray<{ readonly source: TContextSource; readonly worker: string }>;
+  /** Top-level `workers:` map from merged config. */
+  readonly workers: Readonly<Record<string, TWorkerProfile>>;
+  /** Full merged config for shrinker runner (read-only). */
+  readonly aimoConfig: TAimoConfig;
 };
 
 /**
@@ -35,6 +46,8 @@ export type TRunPipelineLoaded = {
  * @param needPlan - Slice includes plan.
  * @param needExec - Slice includes execute.
  * @param needRev - Slice includes review.
+ * @param pipelineOpts - Optional pipeline CLI overrides.
+ * @param pipelineOpts.keepRaw - When `false`, raw context files are deleted after shrinking (`--no-keep-raw`).
  * @returns `{ ok: true, data }` on success, or `{ ok: false, exitCode }` with `EXIT_CONFIG_ERROR` when YAML or providers are invalid.
  */
 export async function loadRunPipelineStageBindings(
@@ -43,6 +56,7 @@ export async function loadRunPipelineStageBindings(
   needPlan: boolean,
   needExec: boolean,
   needRev: boolean,
+  pipelineOpts: { readonly keepRaw?: boolean } = {},
 ): Promise<
   { ok: false; readonly exitCode: number } | { ok: true; readonly data: TRunPipelineLoaded }
 > {
@@ -73,7 +87,7 @@ export async function loadRunPipelineStageBindings(
 
     planProvider = resolvedPlan.plan.provider;
     planModel = resolvedPlan.plan.model;
-    planChat = selectPlanChatPortForRun(planProvider);
+    planChat = selectPlanChatPortForRun(resolvedPlan.plan);
     if (!planChat) {
       process.stderr.write(
         `run: plan provider "${planProvider}" is not supported yet (use provider: fake for now)\n`,
@@ -109,7 +123,7 @@ export async function loadRunPipelineStageBindings(
 
     reviewProvider = resolvedReview.review.provider;
     reviewModel = resolvedReview.review.model;
-    reviewChat = selectReviewChatPortForRun(reviewProvider);
+    reviewChat = selectReviewChatPortForRun(resolvedReview.review);
     if (!reviewChat) {
       process.stderr.write(
         `run: review provider "${reviewProvider}" is not supported yet (use provider: fake for now)\n`,
@@ -117,6 +131,8 @@ export async function loadRunPipelineStageBindings(
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }
   }
+
+  const keepRaw = pipelineOpts.keepRaw === false ? false : cfg.pipeline.keep_raw;
 
   return {
     ok: true,
@@ -129,6 +145,10 @@ export async function loadRunPipelineStageBindings(
       reviewProvider,
       reviewModel,
       reviewChat,
+      keepRaw,
+      shrinkers: firstShrinkerWorkerPerSource(cfg.pipeline.shrinkers),
+      workers: cfg.workers,
+      aimoConfig: cfg,
     },
   };
 }

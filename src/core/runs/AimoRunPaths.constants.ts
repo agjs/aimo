@@ -22,11 +22,20 @@ export const GIT_DIFF_BEFORE_BASENAME = 'git.diff.before.txt' as const;
 /** `git diff HEAD` text captured after delegated spawn. */
 export const GIT_DIFF_AFTER_BASENAME = 'git.diff.after.txt' as const;
 
+/** Delegated executor stdout (raw context source `execute.stdout`). */
+export const EXECUTE_STDOUT_TXT_BASENAME = 'execute.stdout.txt' as const;
+
+/** Delegated executor stderr (raw context source `execute.stderr`). */
+export const EXECUTE_STDERR_TXT_BASENAME = 'execute.stderr.txt' as const;
+
 /** Execute-stage summary (exit code, git capture errors). */
 export const EXECUTE_RESULT_JSON_BASENAME = 'execute.result.json' as const;
 
 /** Reviewer output filename inside a run directory. */
 export const REVIEW_MD_FILENAME = 'review.md' as const;
+
+/** Sidecar JSON for cheap worker invocations (shrinkers). */
+export const WORKERS_JSON_BASENAME = 'workers.json' as const;
 
 /**
  * Relative directory for one run (POSIX slashes).

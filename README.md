@@ -78,6 +78,22 @@ aimo --help
 
 See [`USAGE.md`](./USAGE.md) for commands, exit codes, config merge rules, and recipes.
 
+### Workers / shrinkers (optional)
+
+After execute, **cheap models** can summarize stdout, stderr, and `git diff` before review. Add to `aimo.yaml`:
+
+```yaml
+workers:
+  log_squeezer:
+    provider: fake
+    model: stub
+pipeline:
+  shrinkers:
+    - { source: execute.stdout, worker: log_squeezer }
+```
+
+Use `openrouter` / `openai-compat` with `OPENROUTER_API_KEY` / `OPENAI_API_KEY` for real HTTP. See [`docs/ai/spec-cheap-workers.md`](./docs/ai/spec-cheap-workers.md).
+
 Validate your setup: `aimo doctor` or `aimo doctor --json` (invalid config exits `5`; see [`src/core/contracts/ExitCodes.constants.ts`](./src/core/contracts/ExitCodes.constants.ts)).
 
 ## Docs for contributors

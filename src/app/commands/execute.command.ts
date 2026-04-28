@@ -138,6 +138,8 @@ async function runExecuteDelegatedOnce(options: {
     gitDiffBefore: beforeDiff.ok ? beforeDiff.text : '',
     gitDiffAfter: afterDiff.ok ? afterDiff.text : '',
     executeResultJson: serializeExecuteResultJson(executeRecord),
+    executeStdout: spawned.stdout,
+    executeStderr: spawned.stderr,
   });
   if (options.json) {
     process.stdout.write(
