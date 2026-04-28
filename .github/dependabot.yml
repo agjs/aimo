@@ -3,11 +3,11 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Etc/UTC
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     versioning-strategy: increase-if-necessary
     groups:
       eslint:
@@ -37,7 +37,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Etc/UTC
