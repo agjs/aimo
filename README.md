@@ -1,110 +1,55 @@
 <p align="center">
-  <img src="assets/aimo-logo.png" alt="aimo — AI model orchestrator" width="200" />
+  <img src="assets/aimo-logo.png" alt="aimo — AI model orchestrator" width="480" />
 </p>
 
 # aimo — AI model orchestrator
 
-**Route the right model to the right job** — plan, execute, and review with **different models (and backends) per stage**, so cheap and fast models handle what they excel at and premium models see **summarized, high-signal context** when it matters.
+## The problem
 
-AI pricing and quotas are shifting: blanket “all tasks on the flagship model” workflows get expensive fast. aimo is built for the next phase — **intelligent orchestration** over raw token burn.
+Tools like **Claude Code** (and similar agent stacks) are expensive in large part because **one big model** ends up seeing **everything**: huge context windows, noisy tool output, and work-in-progress that does not all need the same reasoning depth. More tokens in and out means more cost, often for signal that could have been handled by a smaller or cheaper model—or never shown to a frontier model at all.
 
-> The era of assuming infinitely cheap API access is ending. aimo helps you **compose** providers (local, hosted, OpenRouter-style gateways, whatever you wire in) instead of paying flagship rates for every step.
+## The solution
 
-## Features
+**aimo** runs your task as a **pipeline** — **plan** → **execute** → **review** — and lets you **assign different models (and providers / base URLs) per stage**. You use a capable model where it matters and a lighter or cheaper one where it does not, so spend tracks **what each step actually needs**, not “one size fits all” for the whole session.
 
-- **YAML profiles** — bind **plan**, **execute**, and **review** independently (`provider`, `model`, optional `base_url` per LLM stage).
-- **Merged config** — `~/.config/ai-model-orchestrator/config.yaml` plus repo-local `./aimo.yaml` (deep merge; project wins).
-- **Run artifacts** — each run under `.aimo/runs/<id>/` (`plan.md`, `review.md`, diffs, manifest, and related files).
-- **CLI** — `plan` → `execute` → `review` (or `run` for the full slice), `--json` for automation, `--dry-run` to validate config and bindings without writing a new run.
+You declare that routing in YAML: merged **user** config (`~/.config/ai-model-orchestrator/config.yaml`) plus **project** `aimo.yaml` (project wins on conflicts). Optional **workers** can summarize long stdout/stderr or diffs before the next stage sees them, so downstream models are not burning tokens on raw noise.
 
-For roadmap and deeper design notes, see [`docs/ai/roadmap.md`](./docs/ai/roadmap.md).
+Each run writes a folder under `.aimo/runs/<id>/` (planner output, execution capture, diffs, reviewer output, manifest, and related files).
+
+**[USAGE.md](./USAGE.md)** — commands, full config reference, workers / shrinkers, exit codes, recipes.
 
 ## Install
 
-End-to-end command catalog and recipes live in [`USAGE.md`](./USAGE.md). Three install paths:
-
-### 1. Standalone binary (no Bun required) — `curl` or `wget`
+Needs **curl** or **wget**. Default path: `~/.local/bin/aimo` (`AIMO_INSTALL_DIR` to change). Env: `AIMO_VERSION`, `AIMO_REPO`, `AIMO_BIN_NAME`.
 
 ```sh
-# auto-detects platform, installs to ~/.local/bin/aimo (override AIMO_INSTALL_DIR)
 curl -fsSL https://raw.githubusercontent.com/agjs/ai-model-orchestrator/main/scripts/install-aimo.sh | bash
 ```
 
-Or pick the asset directly from [Releases](https://github.com/agjs/ai-model-orchestrator/releases/latest):
-
 ```sh
-# example: macOS ARM
-curl -fsSLo aimo https://github.com/agjs/ai-model-orchestrator/releases/latest/download/aimo-darwin-arm64
-chmod +x aimo && mv aimo /usr/local/bin/aimo
-aimo --version
+wget -qO- https://raw.githubusercontent.com/agjs/ai-model-orchestrator/main/scripts/install-aimo.sh | bash
 ```
 
-Builds are produced by [`bun build --compile`](https://bun.com/docs/bundler/executables) from a tagged commit and attached to the GitHub Release as `aimo-<os>-<arch>`. No Bun runtime needed on the target machine.
+If the download **404s**, the [release](https://github.com/agjs/ai-model-orchestrator/releases) has no binary for your platform yet — run [**release-binaries**](https://github.com/agjs/ai-model-orchestrator/actions/workflows/release-binaries.yml) for that tag (workflow_dispatch).
 
-### 2. Bun global (recommended for contributors)
-
-Requires [Bun](https://bun.sh/) `>=1.2.0` (this repo pins `bun@1.3.13`).
-
-```sh
-git clone https://github.com/agjs/ai-model-orchestrator.git
-cd ai-model-orchestrator
-bun install
-bun link                # registers the `aimo` bin from package.json globally
-aimo --help
-```
-
-Make sure Bun's global bin (`~/.bun/bin` by default) is on your `PATH`.
-
-### 3. Run from a checkout (no install)
-
-```sh
-bun install
-bun src/app/cli.ts --help
-```
-
-Same flags as the installed binary; useful when hacking on the CLI itself.
+**Changing this codebase** (tests, CI, compiling locally): [`CONTRIBUTING.md`](./CONTRIBUTING.md) — dev toolchain is [Bun](https://bun.sh/); end users do not install it.
 
 ## Quick start
 
 ```sh
-aimo init --json                       # writes ~/.config/ai-model-orchestrator/config.yaml + ./aimo.yaml
-aimo doctor --json                     # validates merged config
-aimo ping --json                       # one fake chat completion (smoke)
-aimo plan "your task" --json           # planner stage → .aimo/runs/<uuid>/plan.md
-aimo run "your task" --json            # plan → execute → review (with delegated profile)
-aimo run "your task" --dry-run --json  # validate config + bindings only
+aimo init --json
+aimo doctor --json
+aimo run "your task" --json
+aimo run "your task" --dry-run --json
 aimo --help
 ```
 
-See [`USAGE.md`](./USAGE.md) for commands, exit codes, config merge rules, and recipes.
+## Repo
 
-### Workers / shrinkers (optional)
-
-After execute, **cheap models** can summarize stdout, stderr, and `git diff` before review. Add to `aimo.yaml`:
-
-```yaml
-workers:
-  log_squeezer:
-    provider: fake
-    model: stub
-pipeline:
-  shrinkers:
-    - { source: execute.stdout, worker: log_squeezer }
-```
-
-Use `openrouter` / `openai-compat` with `OPENROUTER_API_KEY` / `OPENAI_API_KEY` for real HTTP. See [`docs/ai/spec-cheap-workers.md`](./docs/ai/spec-cheap-workers.md).
-
-Validate your setup: `aimo doctor` or `aimo doctor --json` (invalid config exits `5`; see [`src/core/contracts/ExitCodes.constants.ts`](./src/core/contracts/ExitCodes.constants.ts)).
-
-## Docs for contributors
-
-- [`AGENTS.md`](./AGENTS.md) — architecture, boundaries, JSDoc, anti-patterns, workflows
-- [`CLAUDE.md`](./CLAUDE.md) — quick pointer + same rules for Claude Code sessions
-- [`docs/ai/`](./docs/ai/) — roadmap, architecture, contribution contract, conventions, security model, catalog
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — short contribution guide
-
-API reference: run `bun run docs` → HTML in `dist/docs/` (gitignored).
+- [`AGENTS.md`](./AGENTS.md) — layout and conventions for changes here  
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)  
+- API HTML: `bun run docs` → `dist/docs/` (gitignored)
 
 ## License
 
-MIT — see [`LICENSE`](./LICENSE).
+MIT — [`LICENSE`](./LICENSE).
