@@ -1,7 +1,7 @@
 /**
  * @file runPipeline.feature.ts
  * @layer features
- * @description Placeholder for Milestone A `runPipeline` orchestrator (plan → execute → review).
+ * @description Chat-stage building blocks for plan/review; full `aimo run` orchestration lives in `app/orchestrateRunPipeline.app.ts`.
  */
 
 import { EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
@@ -10,8 +10,8 @@ import { runPlanChat } from './planStage.feature';
 import { runReviewChat } from './reviewStage.feature';
 
 /**
- * Temporary hook proving `features` → `core` wiring compiles under boundary rules.
- * @returns The success exit code constant used once the real pipeline lands.
+ * Compile-time hook proving `features` → `core` wiring stays linked for the pipeline graph.
+ * @returns The success exit code constant for composition checks.
  */
 export function getPipelinePlaceholderExitCode(): typeof EXIT_SUCCESS {
   void runPlanChat;

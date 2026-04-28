@@ -22,6 +22,7 @@ import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types'
 import type { IClockPort } from '@core/ports/IClockPort.types';
 import type { IHttpPort } from '@core/ports/IHttpPort.types';
 import { buildReviewMessages } from '@core/review/BuildReviewMessages.behavior';
+import { ensureVerdictForPersistedReview } from '@core/review/ensureVerdictForPersistedReview.behavior';
 import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
 import { parseReviewVerdictFromMarkdown } from '@core/review/ParseReviewVerdict.behavior';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
@@ -171,6 +172,13 @@ export function assertReviewStageWired(): void {
   }
   void runReviewChat;
   void writeReviewMarkdown;
+}
+
+/**
+ * Keeps `aimo run` orchestration imports in the graph until the command ships.
+ */
+export function assertRunPipelineWired(): void {
+  void ensureVerdictForPersistedReview('wire\n\nVERDICT: pass\n', 'openai');
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

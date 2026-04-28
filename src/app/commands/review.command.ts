@@ -9,9 +9,8 @@ import { join } from 'node:path';
 import { EXIT_CONFIG_ERROR, EXIT_OPERATIONAL_ERROR } from '@core/contracts/ExitCodes.constants';
 import { isSafeRunDirectoryName } from '@core/execute/isSafeRunDirectoryName.behavior';
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
+import { ensureVerdictForPersistedReview } from '@core/review/ensureVerdictForPersistedReview.behavior';
 import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
-import { parseReviewVerdictFromMarkdown } from '@core/review/ParseReviewVerdict.behavior';
-import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
 import { GIT_DIFF_AFTER_BASENAME, REVIEW_MD_FILENAME } from '@core/runs/AimoRunPaths.constants';
 import { runReviewChat } from '@features/reviewStage.feature';
@@ -30,34 +29,6 @@ function selectReviewChatPort(provider: string): IChatCompletionPort | null {
     return createInProcessFakeChatPort();
   }
   return null;
-}
-
-/**
- * When the in-process fake echoes the user blob without a verdict line, treat review as **pass**
- * for CI and append the required trailing line to persisted markdown.
- * @param markdown - Raw assistant markdown.
- * @param provider - Config provider id.
- * @returns Markdown to persist and verdict, or a parse error for non-fake providers.
- */
-function ensureVerdictForPersistedReview(
-  markdown: string,
-  provider: string,
-):
-  | { ok: true; readonly markdownOut: string; readonly verdict: TReviewVerdict }
-  | { ok: false; readonly message: string } {
-  const parsed = parseReviewVerdictFromMarkdown(markdown);
-  if (parsed.ok) {
-    return { ok: true, markdownOut: markdown, verdict: parsed.verdict };
-  }
-  if (provider === 'fake') {
-    const suffix = '\n\nVERDICT: pass\n';
-    return {
-      ok: true,
-      markdownOut: `${markdown.replace(/\s+$/u, '')}${suffix}`,
-      verdict: 'pass',
-    };
-  }
-  return { ok: false, message: parsed.message };
 }
 
 /**

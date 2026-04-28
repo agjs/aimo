@@ -18,6 +18,8 @@ bun src/app/cli.ts doctor --json # validate merged config
 bun src/app/cli.ts ping --json  # one fake chat completion (smoke)
 bun src/app/cli.ts plan 'your task' --json  # planner stage → `.aimo/runs/<uuid>/plan.md` + manifest
 # after overriding profile execute to `type: delegated` in ./aimo.yaml:
+bun src/app/cli.ts run 'your task' --json            # plan → execute → review (one run id)
+bun src/app/cli.ts run 'your task' --dry-run --json # validate config / stages only (no artifacts)
 bun src/app/cli.ts execute --run '<uuid-from-plan-json>' --json
 bun src/app/cli.ts review --run '<same-uuid>' --json   # writes review.md; exit 0/2/3 from VERDICT
 bun src/app/cli.ts --help

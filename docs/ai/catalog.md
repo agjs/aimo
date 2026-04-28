@@ -13,7 +13,9 @@
 | `commands/plan.command.ts` | `aimo plan` / `--json` — planner chat, `.aimo/runs/<id>/plan.md` + `manifest.json` (fake provider for now). |
 | `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
 | `commands/review.command.ts` | `aimo review --run <id>` — reviewer chat, `review.md`, process exit from `VERDICT` (`0` / `2` / `3`). |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertExecuteStageWired`, `assertPlanStageWired`, `assertReviewStageWired`. |
+| `commands/run.command.ts` | `aimo run` / `--dry-run` / `--json` — thin wrapper around `runAimoRunPipeline`. |
+| `orchestrateRunPipeline.app.ts` | Plan → delegated execute → review in one process; exit codes per `ExitCodes`. |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, stage `assert*` wiring including `assertRunPipelineWired`. |
 
 ## `src/core/`
 
@@ -36,6 +38,7 @@
 | `review/BuildReviewMessages.behavior.ts` | Reviewer system + user messages (plan, diff, transcript slots). |
 | `review/exitCodeForReviewVerdict.behavior.ts` | Map `VERDICT` token to `ExitCodes` review exits. |
 | `review/ParseReviewVerdict.behavior.ts` | Parse final `VERDICT:` line from reviewer markdown. |
+| `review/ensureVerdictForPersistedReview.behavior.ts` | Append `VERDICT: pass` for `fake` provider when missing; else require parseable verdict. |
 | `review/ResolveReviewStage.behavior.ts` | Resolve `profiles.*.review` routing from merged config. |
 | `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers (`plan.md`, `review.md`, diff files, …). |
 | `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
@@ -52,7 +55,7 @@
 | ------ | ---------------- |
 | `planStage.feature.ts` | `runPlanChat` — one completion via `IChatCompletionPort` + `buildPlanMessages`. |
 | `reviewStage.feature.ts` | `runReviewChat` — one completion via `IChatCompletionPort` + `buildReviewMessages`. |
-| `runPipeline.feature.ts` | Placeholder for full pipeline; keeps `runPlanChat` / `runReviewChat` in the build graph. |
+| `runPipeline.feature.ts` | Re-exports pipeline stage hooks for composition; full `aimo run` lives under `app/`. |
 
 ## `src/providers/`
 
@@ -86,7 +89,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `execute`, `review`, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `run`, `execute`, `review`, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
 | `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |

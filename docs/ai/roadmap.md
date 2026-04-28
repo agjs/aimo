@@ -19,9 +19,9 @@ Goal: end-to-end **plan → execute → review** on disk, **fake LLM** in CI, re
 | A5 | `aimo plan` — planner prompt, stream/save `plan.md`, run id under `.aimo/runs/<id>/` | Done (non-streaming completion + `--json`; true streaming deferred) |
 | A6 | Delegated `aimo execute` — spawn command with substitutions, capture diff | Done (`--run`, `{plan_path}` argv + optional stdin, `git diff HEAD` before/after, artifacts under run dir) |
 | A7 | `aimo review` — reviewer prompt, `review.md` + `VERDICT:` line | Done (`--run`, fake stubs `VERDICT: pass`; exit `0`/`2`/`3` from verdict) |
-| A8 | `aimo run` + `--dry-run` — orchestrates A5–A7; exit codes per [ExitCodes](../../src/core/contracts/ExitCodes.constants.ts) | Not started |
+| A8 | `aimo run` + `--dry-run` — orchestrates A5–A7; exit codes per [ExitCodes](../../src/core/contracts/ExitCodes.constants.ts) | Done (`run` + `--dry-run` + `--json`; e2e) |
 | A9 | Step-shaped flags (`--plan`, `--from`, etc.) so stages compose in shell | Not started |
-| A10 | Tests: schema, merge, fake provider, integration + **e2e** for CLI (`bun test`) | Partial (per-command e2e incl. plan→execute→review; full `aimo run` e2e in A8) |
+| A10 | Tests: schema, merge, fake provider, integration + **e2e** for CLI (`bun test`) | Partial (`aimo run` e2e added; extend as new commands land) |
 
 **Exit criteria for A:** `bun run check` green; e2e runs `aimo` with fake provider in CI; README quickstart updated.
 

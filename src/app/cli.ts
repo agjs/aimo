@@ -15,12 +15,14 @@ import { registerInitCommand } from './commands/init.command';
 import { registerPingCommand } from './commands/ping.command';
 import { registerPlanCommand } from './commands/plan.command';
 import { registerReviewCommand } from './commands/review.command';
+import { registerRunCommand } from './commands/run.command';
 import {
   assertAimoConfigWiring,
   assertExecuteStageWired,
   assertPlanStageWired,
   assertProviderPortsWired,
   assertReviewStageWired,
+  assertRunPipelineWired,
   createCleanupRegistry,
   createDefaultClockPort,
   getCurrentSchemaVersion,
@@ -39,6 +41,7 @@ function assertCompositionWired(): void {
   assertPlanStageWired();
   assertProviderPortsWired();
   assertReviewStageWired();
+  assertRunPipelineWired();
 }
 
 /**
@@ -67,6 +70,7 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
   registerPlanCommand(program);
   registerExecuteCommand(program);
   registerReviewCommand(program);
+  registerRunCommand(program);
 
   const [, , ...rest] = argv;
   if (rest.length === 0) {
