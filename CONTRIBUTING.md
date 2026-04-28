@@ -53,6 +53,13 @@ Full detail: [`AGENTS.md`](./AGENTS.md) and (once authored) `docs/ai/contributio
 
 Breaking change: `feat!:` / `fix!:` or a `BREAKING CHANGE:` footer.
 
+### release-please (repo settings)
+
+The [`release-please.yml`](./.github/workflows/release-please.yml) job needs a `GITHUB_TOKEN` that can **open and update PRs**. If you see *“Actions is not permitted to create or approve pull requests”*:
+
+1. **Workflow file** — do not set workflow-wide `permissions: contents: read`; it caps the token so job-level `pull-requests: write` never applies (fixed in this repo).
+2. **GitHub UI** — **Settings → Actions → General → Workflow permissions** — choose **Read and write** (or grant **Pull requests: Write** / **Contents: Write** for Actions) if the org default is read-only.
+
 ## PR checklist
 
 - [ ] `bun run check` passes locally

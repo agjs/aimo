@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+# Do not set workflow-wide `permissions: contents: read` here — it caps GITHUB_TOKEN for
+# every job, so job-level `pull-requests: write` cannot apply and release-please fails.
 
 jobs:
   release-please:
