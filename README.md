@@ -19,7 +19,11 @@ bun src/app/cli.ts --help
 ## Docs for contributors
 
 - [`AGENTS.md`](./AGENTS.md) — architecture, boundaries, JSDoc, anti-patterns, workflows
+- [`CLAUDE.md`](./CLAUDE.md) — quick pointer + same rules for Claude Code sessions
+- [`docs/ai/`](./docs/ai/) — architecture diagram, contribution contract, conventions, security model, catalog
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — short contribution guide
+
+API reference (early scaffold): run `bun run docs` → HTML in `dist/docs/` (ignored by git).
 
 ## License
 
