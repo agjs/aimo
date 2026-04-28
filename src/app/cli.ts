@@ -12,8 +12,10 @@ import { Command } from 'commander';
 import { registerDoctorCommand } from './commands/doctor.command';
 import { registerInitCommand } from './commands/init.command';
 import { registerPingCommand } from './commands/ping.command';
+import { registerPlanCommand } from './commands/plan.command';
 import {
   assertAimoConfigWiring,
+  assertPlanStageWired,
   assertProviderPortsWired,
   createCleanupRegistry,
   createDefaultClockPort,
@@ -29,6 +31,7 @@ function assertCompositionWired(): void {
   void createDefaultClockPort().nowMs();
   void getPipelinePlaceholderExitCode();
   assertAimoConfigWiring();
+  assertPlanStageWired();
   assertProviderPortsWired();
 }
 
@@ -55,6 +58,7 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
   registerInitCommand(program);
   registerDoctorCommand(program);
   registerPingCommand(program);
+  registerPlanCommand(program);
 
   const [, , ...rest] = argv;
   if (rest.length === 0) {

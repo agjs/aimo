@@ -12,14 +12,19 @@ import {
 import { mergeConfigRecordLayers } from '@core/config/deepMergeRecord.behavior';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
 import { CleanupRegistry } from '@core/lifecycle/CleanupRegistry.behavior';
+import { buildPlanMessages } from '@core/plan/BuildPlanMessages.behavior';
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import type { IClockPort } from '@core/ports/IClockPort.types';
 import type { IHttpPort } from '@core/ports/IHttpPort.types';
+import { relativePlanMdPath } from '@core/runs/AimoRunPaths.constants';
+import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
+import { runPlanChat } from '@features/planStage.feature';
 import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.provider';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
 import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
 import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
 import { BunHttpPort } from '@runtime/bun/HttpPort.bun';
+import { prepareRunArtifactPaths } from '@runtime/bun/RunWorkspace.bun';
 
 /**
  * Creates the default wall-clock port for production-style runs.
@@ -80,6 +85,25 @@ export function assertAimoConfigWiring(): void {
   void loadAimoConfigFromPaths;
   void loadResolvedAimoConfig;
   void runInitWrites;
+}
+
+/**
+ * Keeps plan-stage core + feature + run workspace wiring in the dependency graph until `aimo plan` ships.
+ */
+export function assertPlanStageWired(): void {
+  void buildPlanMessages('wire');
+  void relativePlanMdPath('00000000-0000-0000-0000-000000000000');
+  void serializePlanManifestJson({
+    schema_version: CURRENT_SCHEMA_VERSION,
+    run_id: 'wire',
+    stage: 'plan',
+    created_at_ms: 0,
+    profile: 'default',
+    provider: 'fake',
+    model: 'stub',
+  });
+  void runPlanChat;
+  void prepareRunArtifactPaths;
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

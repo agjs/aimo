@@ -10,7 +10,8 @@
 | `commands/doctor.command.ts` | `aimo doctor` / `doctor --json` — runs `loadResolvedAimoConfig`, exit `EXIT_CONFIG_ERROR` on invalid YAML. |
 | `commands/init.command.ts` | `aimo init` — writes starter `config.yaml` / `aimo.yaml` (`--global-only`, `--local-only`, `--force`, `--json`). |
 | `commands/ping.command.ts` | `aimo ping` / `--json` — one round-trip through `InProcessFakeChatProvider` (CI smoke). |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories. |
+| `commands/plan.command.ts` | `aimo plan` / `--json` — planner chat, `.aimo/runs/<id>/plan.md` + `manifest.json` (fake provider for now). |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertPlanStageWired`. |
 
 ## `src/core/`
 
@@ -28,6 +29,18 @@
 | `ports/IClockPort.types.ts` | Time port (example port + contract tests). |
 | `ports/IChatCompletionPort.types.ts` | One-shot chat completion port (fake + future HTTP adapters). |
 | `ports/IHttpPort.types.ts` | JSON POST port for OpenAI-compatible HTTP providers. |
+| `plan/BuildPlanMessages.behavior.ts` | Planner system + user messages from task text. |
+| `plan/ResolvePlanStage.behavior.ts` | Resolve `profiles.*.plan` routing from merged config. |
+| `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers. |
+| `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
+| `runs/RunManifestJson.behavior.ts` | Serialize plan manifest to pretty JSON. |
+
+## `src/features/`
+
+| Module | Responsibility |
+| ------ | ---------------- |
+| `planStage.feature.ts` | `runPlanChat` — one completion via `IChatCompletionPort` + `buildPlanMessages`. |
+| `runPipeline.feature.ts` | Placeholder for full pipeline; keeps `runPlanChat` in the build graph. |
 
 ## `src/providers/`
 
@@ -44,6 +57,7 @@
 | `ConfigLoader.bun.ts` | Read user `config.yaml` + `./aimo.yaml`, `mergeConfigRecordLayers`, Zod validate; `loadAimoConfigFromPaths` for tests. |
 | `ConfigInitWriter.bun.ts` | `runInitWrites` — mkdir user dir, conditional write / skip / overwrite for init. |
 | `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse. |
+| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts` — `.aimo/runs/<id>/` on disk. |
 
 ## `src/shared/`
 
@@ -58,7 +72,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
-| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, wiring smoke). |
+| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `runWorkspace`, wiring smoke). |
