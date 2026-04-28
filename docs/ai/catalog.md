@@ -7,7 +7,7 @@
 | Module | Responsibility |
 | ------ | ---------------- |
 | `cli.ts` | CLI entry (`commander`); calls `assertCompositionWired()` so `wireDefaults` + `features` stay in the dependency graph until real commands land. |
-| `wireDefaults.ts` | Composition root — clock port, schema version, cleanup registry factory (expand with providers in Milestone A). |
+| `wireDefaults.ts` | Composition root — clock, schema version, cleanup, env + YAML config loaders (`loadResolvedAimoConfig`). |
 
 ## `src/core/`
 
@@ -17,6 +17,8 @@
 | `contracts/SchemaVersion.constants.ts` | `schema_version` for artifacts. |
 | `config/DotEnvParse.behavior.ts` | Pure `.env` text → map parser. |
 | `config/EnvPrecedence.behavior.ts` | Pure merge of env maps (process wins over files). |
+| `config/deepMergeRecord.behavior.ts` | Deep-merge YAML roots; project `aimo.yaml` overlays user `config.yaml`. |
+| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML (delegated execute rules). |
 | `lifecycle/CleanupRegistry.behavior.ts` | Pure LIFO cleanup registration (signals wired in `runtime/`). |
 | `ports/IClockPort.types.ts` | Time port (example port + contract tests). |
 
@@ -26,6 +28,7 @@
 | ------ | ---------------- |
 | `ClockPort.bun.ts` | `IClockPort` using wall clock (allowed only in runtime). |
 | `EnvLoader.bun.ts` | Read `./.env` + `~/.config/ai-model-orchestrator/.env`, merge with `process.env` via `mergeEnvLayers`. |
+| `ConfigLoader.bun.ts` | Read user `config.yaml` + `./aimo.yaml`, `mergeConfigRecordLayers`, Zod validate; `loadAimoConfigFromPaths` for tests. |
 
 ## `src/shared/`
 
@@ -41,4 +44,5 @@
 | `_helpers/spawnCli.ts` | Subprocess CLI runner for e2e. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
 | `e2e/` | Black-box CLI tests. |
-| `unit/` | Fast pure tests. |
+| `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, …). |
+| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, wiring smoke). |

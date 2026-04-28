@@ -10,6 +10,7 @@ import { PACKAGE_VERSION } from '@shared/constants/Version.constants';
 import { Command } from 'commander';
 
 import {
+  assertAimoConfigWiring,
   createCleanupRegistry,
   createDefaultClockPort,
   getCurrentSchemaVersion,
@@ -23,6 +24,7 @@ function assertCompositionWired(): void {
   void createCleanupRegistry();
   void createDefaultClockPort().nowMs();
   void getPipelinePlaceholderExitCode();
+  assertAimoConfigWiring();
 }
 
 /**

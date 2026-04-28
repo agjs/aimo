@@ -16,6 +16,8 @@ bun run check
 bun src/app/cli.ts --help
 ```
 
+**Config (YAML):** user defaults live in `~/.config/ai-model-orchestrator/config.yaml`; the repo-local `./aimo.yaml` **overrides** on a per-key deep merge. See [`docs/ai/roadmap.md`](./docs/ai/roadmap.md) (Milestone A) and runtime `ConfigLoader.bun.ts` JSDoc.
+
 ## Docs for contributors
 
 - [`AGENTS.md`](./AGENTS.md) — architecture, boundaries, JSDoc, anti-patterns, workflows

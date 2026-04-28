@@ -4,10 +4,13 @@
  * @description Composition root — construct Bun-backed ports and registries here (expand in Milestone A).
  */
 
+import { safeParseAimoConfig } from '@core/config/AimoConfig.schema';
+import { mergeConfigRecordLayers } from '@core/config/deepMergeRecord.behavior';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
 import { CleanupRegistry } from '@core/lifecycle/CleanupRegistry.behavior';
 import type { IClockPort } from '@core/ports/IClockPort.types';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
+import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
 
 /**
  * Creates the default wall-clock port for production-style runs.
@@ -33,4 +36,15 @@ export function createCleanupRegistry(): CleanupRegistry {
   return new CleanupRegistry();
 }
 
+/**
+ * Keeps YAML merge + Zod config wiring in the dependency graph until commands call the loaders.
+ */
+export function assertAimoConfigWiring(): void {
+  void mergeConfigRecordLayers([{ schema_version: 1 }, {}]);
+  void safeParseAimoConfig({});
+  void loadAimoConfigFromPaths;
+  void loadResolvedAimoConfig;
+}
+
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';
+export { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
