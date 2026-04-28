@@ -1,0 +1,50 @@
+{
+  "name": "ai-model-orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bun + TypeScript CLI: plan → execute → review with per-stage model routing (aimo)",
+  "license": "MIT",
+  "packageManager": "bun@1.2.19",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "bin": {
+    "aimo": "./src/app/cli.ts",
+    "ai-model-orchestrator": "./src/app/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch src/app/cli.ts --help",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "bun test",
+    "depcruise": "depcruise src",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun run depcruise && bun test",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "commander": "13.1.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "20.5.0",
+    "@commitlint/config-conventional": "20.5.0",
+    "@eslint/js": "10.0.1",
+    "@types/bun": "1.2.19",
+    "dependency-cruiser": "17.3.10",
+    "eslint": "10.2.1",
+    "eslint-import-resolver-typescript": "4.4.4",
+    "eslint-plugin-boundaries": "6.0.2",
+    "eslint-plugin-import-x": "4.16.2",
+    "eslint-plugin-jsdoc": "50.6.17",
+    "globals": "17.5.0",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
+    "prettier": "3.8.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.59.0"
+  }
+}

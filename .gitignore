@@ -1,0 +1,29 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.cache/
+
+# aimo run artifacts
+.aimo/
+
+# Test artifacts
+.nyc_output/
+
+# Editor
+.DS_Store
+.idea/
+*.swp
+*.swo
+*.log
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+*.tsbuildinfo
+
+# OS
+Thumbs.db

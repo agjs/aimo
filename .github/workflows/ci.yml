@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: bun check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+      - uses: oven-sh/setup-bun@735343b667110187fa798469f472d7f45d1459a7 # v2.0.2
+        with:
+          bun-version: '1.2.19'
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run depcruise
+      - run: bun test
+
+  arch-invariants:
+    name: core purity (grep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+      - name: banned patterns in src/core
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ripgrep
+          if [ ! -d src/core ]; then echo 'OK (no src/core yet)'; exit 0; fi
+          if rg -n "process\.|Bun\.|fetch\(|Date\.now|Math\.random" src/core --glob '*.ts'; then
+            echo 'Banned pattern in src/core — use ports + runtime instead.'
+            exit 1
+          fi
+          echo 'OK: no banned patterns under src/core'
