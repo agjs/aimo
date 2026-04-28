@@ -1,7 +1,7 @@
 /**
  * @file IClockPort.types.ts
  * @layer core
- * @description Wall-clock abstraction — `core/` never calls `Date.now` directly.
+ * @description Wall-clock abstraction — `core/` never reads wall time from globals; use this port.
  */
 
 /**
@@ -9,7 +9,7 @@
  */
 export interface IClockPort {
   /**
-   * @returns Milliseconds since Unix epoch (same contract as `Date.now()`).
+   * @returns Milliseconds since Unix epoch (ECMAScript time value in milliseconds).
    */
   nowMs(): number;
 }

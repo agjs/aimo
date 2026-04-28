@@ -1,7 +1,7 @@
 /**
  * @file EnvPrecedence.behavior.ts
  * @layer core
- * @description Pure merge rules for environment variable precedence (no `process.env` reads here).
+ * @description Pure merge rules for environment variable precedence (callers supply maps; no host env reads here).
  */
 
 /**
