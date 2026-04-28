@@ -2,7 +2,11 @@
 export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
-    'header-max-length': [2, 'always', 72],
+    // config-conventional caps line/length; we prefer long subjects and bodies.
+    'body-max-line-length': [0],
+    'footer-max-line-length': [0],
+    'header-max-length': [0],
+    'subject-max-length': [0],
     'subject-full-stop': [2, 'never', '.'],
     'type-enum': [
       2,
