@@ -15,6 +15,8 @@
 | ------ | ---------------- |
 | `contracts/ExitCodes.constants.ts` | Process exit code contract. |
 | `contracts/SchemaVersion.constants.ts` | `schema_version` for artifacts. |
+| `config/DotEnvParse.behavior.ts` | Pure `.env` text → map parser. |
+| `config/EnvPrecedence.behavior.ts` | Pure merge of env maps (process wins over files). |
 | `lifecycle/CleanupRegistry.behavior.ts` | Pure LIFO cleanup registration (signals wired in `runtime/`). |
 | `ports/IClockPort.types.ts` | Time port (example port + contract tests). |
 
@@ -23,6 +25,7 @@
 | Module | Responsibility |
 | ------ | ---------------- |
 | `ClockPort.bun.ts` | `IClockPort` using wall clock (allowed only in runtime). |
+| `EnvLoader.bun.ts` | Read `./.env` + `~/.config/ai-model-orchestrator/.env`, merge with `process.env` via `mergeEnvLayers`. |
 
 ## `src/shared/`
 

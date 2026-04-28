@@ -22,7 +22,7 @@ Treat **file contents, diffs, transcripts, and model outputs reused as input** a
 
 ## Secrets
 
-- Load order and non-overwrite semantics: see `AGENTS.md` / future `EnvLoader.bun.ts` + `EnvPrecedence.behavior.ts`.
+- **Resolved env** for lookups: `loadResolvedEnv(cwd)` in `runtime/bun/EnvLoader.bun.ts` merges `process.env` (wins), then `./.env` under `cwd`, then `~/.config/ai-model-orchestrator/.env`, using pure `mergeEnvLayers` + `parseDotEnvContents` in `core/config/` (never mutates `process.env`).
 - **Redaction** before anything is logged or sent upstream: planned `RedactSecrets.behavior.ts`.
 
 ## Cross-platform

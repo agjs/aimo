@@ -32,3 +32,5 @@ export function getCurrentSchemaVersion(): typeof CURRENT_SCHEMA_VERSION {
 export function createCleanupRegistry(): CleanupRegistry {
   return new CleanupRegistry();
 }
+
+export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

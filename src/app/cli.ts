@@ -4,6 +4,7 @@
  * @layer app
  * @description CLI entrypoint for `aimo` / `ai-model-orchestrator` (commander).
  */
+import { EXIT_OPERATIONAL_ERROR } from '@core/contracts/ExitCodes.constants';
 import { getPipelinePlaceholderExitCode } from '@features/runPipeline.feature';
 import { PACKAGE_VERSION } from '@shared/constants/Version.constants';
 import { Command } from 'commander';
@@ -54,5 +55,9 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
 }
 
 if (import.meta.main) {
-  await main();
+  void main().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`${message}\n`);
+    process.exit(EXIT_OPERATIONAL_ERROR);
+  });
 }
