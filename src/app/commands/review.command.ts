@@ -16,8 +16,8 @@ import { runReviewChat } from '@features/reviewStage.feature';
 import { prepareRunArtifactPaths, writeReviewMarkdown } from '@runtime/bun/RunWorkspace.bun';
 import type { Command } from 'commander';
 
-import { selectReviewChatPortForRun } from '../runPipeline/runPipelineChats.app';
-import { loadReviewDiffAndTranscriptFromRunDir } from '../runPipeline/runPipelineReviewContext.app';
+import { loadReviewDiffAndTranscriptFromRunDir } from '../runPipeline/review/runPipelineReviewContext.app';
+import { selectReviewChatPortForRun } from '../runPipeline/shared/runPipelineChats.app';
 import { loadResolvedAimoConfig } from '../wireDefaults';
 
 /**

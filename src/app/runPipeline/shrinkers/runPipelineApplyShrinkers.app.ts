@@ -16,8 +16,12 @@ import {
 import { resolveWorkerProfile } from '@core/workers/ResolveWorker.behavior';
 import type { TWorkersSidecarCallV1 } from '@core/workers/SerializeWorkersSidecar.behavior';
 import { runWorkerChat } from '@features/workersStage.feature';
+import {
+  writeRunProgressLine,
+  writeRunProgressWarnLine,
+} from '@runtime/bun/RunProgressStderrStyle.bun';
 
-import { selectWorkerChatPortForRun } from './runPipelineChats.app';
+import { selectWorkerChatPortForRun } from '../shared/runPipelineChats.app';
 
 /**
  * Runs shrinkers for deduped `pipeline.shrinkers` rows, writes shrunk markdown + optional raw cleanup.
@@ -44,7 +48,7 @@ export async function runPipelineApplyShrinkers(input: {
     const resolved = resolveWorkerProfile(input.aimoConfig, row.worker);
 
     if (!resolved.ok) {
-      process.stderr.write(`run: ${resolved.message}\n`);
+      writeRunProgressWarnLine(resolved.message);
       continue;
     }
 
@@ -52,12 +56,15 @@ export async function runPipelineApplyShrinkers(input: {
     const chat = selectWorkerChatPortForRun(worker);
 
     if (!chat) {
-      process.stderr.write(
-        `run: worker "${row.worker}" provider "${worker.provider}" is not supported or HTTP credentials are missing\n`,
+      writeRunProgressWarnLine(
+        `worker "${row.worker}" provider "${worker.provider}" is not supported or HTTP credentials are missing`,
       );
       continue;
     }
 
+    writeRunProgressLine(
+      `shrink ${row.source} via ${row.worker} (${worker.provider} / ${worker.model})…`,
+    );
     const out = await runWorkerChat({
       worker,
       chat,
@@ -82,6 +89,9 @@ export async function runPipelineApplyShrinkers(input: {
           }
         : {}),
     });
+    writeRunProgressLine(
+      `shrink ${row.source} done (${String(out.charsOut)} chars out${out.truncatedIn ? ', input truncated' : ''})`,
+    );
 
     if (!input.keepRaw) {
       await unlinkRawForSource(input.runDir, row.source);

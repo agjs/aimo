@@ -5,16 +5,17 @@
  */
 
 import { EXIT_CONFIG_ERROR, EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
+import { writeRunStyledMessage } from '@runtime/bun/RunProgressStderrStyle.bun';
 
-import { loadResolvedAimoConfig } from '../wireDefaults';
+import { loadResolvedAimoConfig } from '../../wireDefaults';
+import type { TRunPipelineOptions } from '../runPipelineTypes.app';
 import {
   resolvePipelineSliceForRun,
   validateBindingsForSlice,
   validateRunIdRequiredUnlessPlanStart,
   validateTaskRequiredForPlan,
 } from './dryRunValidateBindings.app';
-import { formatStageSliceForHumans } from './formatStageSliceForHumans.app';
-import type { TRunPipelineOptions } from './runPipelineTypes.app';
+import { formatStageSliceForHumans } from '../shared/formatStageSliceForHumans.app';
 
 /**
  * Validates merged config for the stages that would run (dry run).
@@ -25,7 +26,7 @@ export async function runDryRunPipeline(options: TRunPipelineOptions): Promise<n
   const sliceRes = resolvePipelineSliceForRun(options.fromStage, options.toStage);
 
   if (!sliceRes.ok) {
-    process.stderr.write(`${sliceRes.message}\n`);
+    writeRunStyledMessage(`${sliceRes.message}\n`, 'warn');
     return EXIT_CONFIG_ERROR;
   }
 
@@ -34,14 +35,14 @@ export async function runDryRunPipeline(options: TRunPipelineOptions): Promise<n
   const taskCheck = validateTaskRequiredForPlan(slice.needPlan, options.task);
 
   if (!taskCheck.ok) {
-    process.stderr.write(taskCheck.message);
+    writeRunStyledMessage(taskCheck.message, 'warn');
     return EXIT_CONFIG_ERROR;
   }
 
   const runIdCheck = validateRunIdRequiredUnlessPlanStart(slice.startsAtPlan, options.runId);
 
   if (!runIdCheck.ok) {
-    process.stderr.write(runIdCheck.message);
+    writeRunStyledMessage(runIdCheck.message, 'warn');
     return EXIT_CONFIG_ERROR;
   }
 
@@ -49,7 +50,7 @@ export async function runDryRunPipeline(options: TRunPipelineOptions): Promise<n
 
   if (!loaded.ok) {
     for (const m of loaded.messages) {
-      process.stderr.write(`${m}\n`);
+      writeRunStyledMessage(`${m}\n`, 'warn');
     }
 
     return EXIT_CONFIG_ERROR;
@@ -61,7 +62,7 @@ export async function runDryRunPipeline(options: TRunPipelineOptions): Promise<n
   const bindings = validateBindingsForSlice(cfg, profileName, slice);
 
   if (!bindings.ok) {
-    process.stderr.write(bindings.message);
+    writeRunStyledMessage(bindings.message, 'warn');
     return EXIT_CONFIG_ERROR;
   }
 

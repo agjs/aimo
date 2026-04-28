@@ -104,4 +104,40 @@ profiles:
     expect(body.review.verdict).toBe('pass');
     expect(body.review.exit_code).toBe(EXIT_SUCCESS);
   });
+
+  it('keeps progress on stderr and one JSON line on stdout under `run --json`', async () => {
+    const { home, cwd } = await createIsolatedHomeAndProject();
+    await initGitWithEmptyCommit(cwd);
+    const init = await spawnCli(['init', '--json'], { cwd, env: { HOME: home } });
+    expect(init.exitCode).toBe(EXIT_SUCCESS);
+    await Bun.write(
+      join(cwd, PROJECT_AIMO_YAML_BASENAME),
+      `schema_version: 1
+default_profile: default
+profiles:
+  default:
+    plan:
+      provider: fake
+      model: stub
+    execute:
+      type: delegated
+      command: ['true']
+    review:
+      provider: fake
+      model: stub
+`,
+    );
+    const run = await spawnCli(['run', 'discipline check', '--json'], {
+      cwd,
+      env: { HOME: home, NO_COLOR: '1' },
+    });
+    expect(run.exitCode).toBe(EXIT_SUCCESS);
+    const stdoutLines = run.stdout.split('\n').filter((l) => l.length > 0);
+    expect(stdoutLines.length).toBe(1);
+    expect(() => {
+      JSON.parse(stdoutLines[0] ?? '') as unknown;
+    }).not.toThrow();
+    expect(run.stdout).not.toContain('run:');
+    expect(run.stderr).toContain('run:');
+  });
 });

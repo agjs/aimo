@@ -10,7 +10,7 @@ import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
 import { writePlanArtifacts } from '@runtime/bun/RunWorkspace.bun';
 
-import { createDefaultClockPort } from '../wireDefaults';
+import { createDefaultClockPort } from '../../wireDefaults';
 
 /**
  * Runs planner chat and writes plan artifacts.

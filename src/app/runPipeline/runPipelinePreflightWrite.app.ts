@@ -5,13 +5,14 @@
  */
 
 import { EXIT_CONFIG_ERROR } from '@core/contracts/ExitCodes.constants';
+import { writeRunStyledMessage } from '@runtime/bun/RunProgressStderrStyle.bun';
 import { prepareRunArtifactPaths } from '@runtime/bun/RunWorkspace.bun';
 
 import {
   type TPipelineSlice,
   resolvePipelineSliceForRun,
   validateTaskRequiredForPlan,
-} from './dryRunValidateBindings.app';
+} from './dryRun/dryRunValidateBindings.app';
 import { resolveRunIdForPipelineSlice } from './resolveRunIdForPipelineSlice.app';
 import { loadRunPipelineStageBindings, type TRunPipelineLoaded } from './runPipelineLoadStages.app';
 import type { TRunPipelineOptions } from './runPipelineTypes.app';
@@ -41,7 +42,7 @@ export async function preflightRunPipelineWrite(
   const sliceRes = resolvePipelineSliceForRun(options.fromStage, options.toStage);
 
   if (!sliceRes.ok) {
-    process.stderr.write(`${sliceRes.message}\n`);
+    writeRunStyledMessage(`${sliceRes.message}\n`, 'warn');
     return { ok: false, exitCode: EXIT_CONFIG_ERROR };
   }
 
@@ -50,7 +51,7 @@ export async function preflightRunPipelineWrite(
   const taskCheck = validateTaskRequiredForPlan(slice.needPlan, options.task);
 
   if (!taskCheck.ok) {
-    process.stderr.write(taskCheck.message);
+    writeRunStyledMessage(taskCheck.message, 'warn');
     return { ok: false, exitCode: EXIT_CONFIG_ERROR };
   }
 

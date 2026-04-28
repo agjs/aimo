@@ -6,15 +6,16 @@
 
 import { EXIT_CONFIG_ERROR, EXIT_OPERATIONAL_ERROR } from '@core/contracts/ExitCodes.constants';
 import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
+import { writeRunProgressErrorLine } from '@runtime/bun/RunProgressStderrStyle.bun';
 
-import type { TWritePreflightContext } from './runPipelinePreflightWrite.app';
 import {
   type TRunPipelineExecuteOk,
   type TRunPipelineExecuteStepResult,
   writeRunPipelineExecuteStep,
-} from './runPipelineWriteExecuteStep.app';
-import { writeRunPipelinePlanStep } from './runPipelineWritePlanStep.app';
-import { writeRunPipelineReviewStep } from './runPipelineWriteReviewStep.app';
+} from './execute/runPipelineWriteExecuteStep.app';
+import { writeRunPipelinePlanStep } from './plan/runPipelineWritePlanStep.app';
+import { writeRunPipelineReviewStep } from './review/runPipelineWriteReviewStep.app';
+import type { TWritePreflightContext } from './runPipelinePreflightWrite.app';
 
 /**
  * Markdown from the plan stage (empty string when plan was not in the slice).
@@ -70,7 +71,7 @@ export async function runPipelineExecuteWritePhase(
   }
 
   if (L.execCfg === null) {
-    process.stderr.write('run: internal error — execute stage configuration missing\n');
+    writeRunProgressErrorLine('internal error — execute stage configuration missing');
     return { outcome: 'config_or_io', exitCode: EXIT_OPERATIONAL_ERROR };
   }
 

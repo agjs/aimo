@@ -6,7 +6,10 @@
 
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 
-import { createInProcessFakeChatPort, createOpenAiCompatChatPortFromStage } from '../wireDefaults';
+import {
+  createInProcessFakeChatPort,
+  createOpenAiCompatChatPortFromStage,
+} from '../../wireDefaults';
 
 /**
  * YAML LLM routing shape shared by plan, review, and worker profiles.

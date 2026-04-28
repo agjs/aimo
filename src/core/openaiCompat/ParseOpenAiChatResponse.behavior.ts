@@ -11,6 +11,10 @@ import type {
   TChatRole,
 } from '@core/chat/ChatCompletion.types';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 /**
  * @param status - HTTP status from the completions endpoint.
  * @param json - Parsed JSON body (or non-object on parse failure — caller may pass adapter fallback).
@@ -27,14 +31,13 @@ export function parseOpenAiChatCompletionJson(
     };
   }
 
-  if (typeof json !== 'object' || json === null) {
+  if (!isRecord(json)) {
     return { ok: false, message: 'chat completion: response JSON is not an object' };
   }
 
-  const obj = json as Record<string, unknown>;
-  const id = typeof obj.id === 'string' && obj.id.length > 0 ? obj.id : 'unknown';
-  const model = typeof obj.model === 'string' && obj.model.length > 0 ? obj.model : '';
-  const choicesRaw = obj.choices;
+  const id = typeof json.id === 'string' && json.id.length > 0 ? json.id : 'unknown';
+  const model = typeof json.model === 'string' && json.model.length > 0 ? json.model : '';
+  const choicesRaw = json.choices;
 
   if (!Array.isArray(choicesRaw) || choicesRaw.length === 0) {
     return { ok: false, message: 'chat completion: missing or empty choices[]' };
@@ -46,7 +49,7 @@ export function parseOpenAiChatCompletionJson(
     return { ok: false, message: 'chat completion: no valid choices in choices[]' };
   }
 
-  const usage = parseUsage(obj.usage);
+  const usage = parseUsage(json.usage);
 
   return {
     ok: true,
@@ -75,22 +78,20 @@ function collectChoicesFromOpenAiArray(choicesRaw: readonly unknown[]): IChatCom
 }
 
 function parseOneOpenAiChoice(raw: unknown, fallbackIndex: number): IChatCompletionChoice | null {
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isRecord(raw)) {
     return null;
   }
 
-  const choice = raw as Record<string, unknown>;
-  const index = typeof choice.index === 'number' ? choice.index : fallbackIndex;
-  const msg = choice.message;
+  const index = typeof raw.index === 'number' ? raw.index : fallbackIndex;
+  const msg = raw.message;
 
-  if (typeof msg !== 'object' || msg === null) {
+  if (!isRecord(msg)) {
     return null;
   }
 
-  const m = msg as Record<string, unknown>;
-  const role = normalizeChatRole(m.role);
-  const content = typeof m.content === 'string' ? m.content : '';
-  const finish_reason = typeof choice.finish_reason === 'string' ? choice.finish_reason : 'stop';
+  const role = normalizeChatRole(msg.role);
+  const content = typeof msg.content === 'string' ? msg.content : '';
+  const finish_reason = typeof raw.finish_reason === 'string' ? raw.finish_reason : 'stop';
   return {
     index,
     message: { role, content },
@@ -107,14 +108,13 @@ function normalizeChatRole(role: unknown): TChatRole {
 }
 
 function parseUsage(raw: unknown): IChatCompletionUsage | undefined {
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isRecord(raw)) {
     return undefined;
   }
 
-  const u = raw as Record<string, unknown>;
-  const prompt = u.prompt_tokens;
-  const completion = u.completion_tokens;
-  const total = u.total_tokens;
+  const prompt = raw.prompt_tokens;
+  const completion = raw.completion_tokens;
+  const total = raw.total_tokens;
 
   if (
     typeof prompt !== 'number' ||
@@ -135,15 +135,11 @@ function parseUsage(raw: unknown): IChatCompletionUsage | undefined {
 }
 
 function summarizeErrorBody(json: unknown): string {
-  if (typeof json === 'object' && json !== null) {
-    const err = (json as Record<string, unknown>).error;
+  if (isRecord(json)) {
+    const err = json.error;
 
-    if (typeof err === 'object' && err !== null) {
-      const msg = (err as Record<string, unknown>).message;
-
-      if (typeof msg === 'string') {
-        return msg;
-      }
+    if (isRecord(err) && typeof err.message === 'string') {
+      return err.message;
     }
   }
 

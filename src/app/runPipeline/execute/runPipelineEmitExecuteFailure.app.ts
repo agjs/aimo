@@ -5,6 +5,7 @@
  */
 
 import type { TPipelineStageName } from '@core/run/resolvePipelineStageRange.behavior';
+import { writeRunProgressErrorLine } from '@runtime/bun/RunProgressStderrStyle.bun';
 
 import {
   runPipelineExecuteArtifactPaths,
@@ -58,7 +59,5 @@ export function emitExecuteSpawnFailure(
     process.stderr.write(input.failure.spawnedStdout);
   }
 
-  process.stderr.write(
-    `run: execute stage exited with code ${String(input.failure.spawnedExit)}\n`,
-  );
+  writeRunProgressErrorLine(`execute stage exited with code ${String(input.failure.spawnedExit)}`);
 }

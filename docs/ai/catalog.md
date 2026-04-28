@@ -17,23 +17,24 @@
 | `orchestrateRunPipeline.app.ts` | Re-exports `runPipeline/` (stable import path for `aimo run`). |
 | `runPipeline/runPipelineOrchestrator.app.ts` | Sequences plan / execute / review slices; exit codes per `ExitCodes`. |
 | `runPipeline/runPipelineTypes.app.ts` | `TRunPipelineOptions` (+ re-exports `TPipelineStageName`). |
-| `runPipeline/dryRunValidateBindings.app.ts` | Pure slice + binding validators (`validateBindingsForSlice`, etc.). |
 | `runPipeline/runPipelinePreflightWrite.app.ts` | Non–dry-run preflight: slice, run id, YAML bindings, artifact paths. |
 | `runPipeline/runPipelineRunWritePhases.app.ts` | Plan / execute / review write phases after preflight. |
-| `runPipeline/runPipelineBuildSuccessJsonSummary.app.ts` | Builds `aimo run --json` success payload (no I/O). |
-| `runPipeline/runPipelineEmitExecuteFailure.app.ts` | JSON/human output for execute `spawn_fail`. |
-| `runPipeline/runPipelineEmitHumanWriteComplete.app.ts` | Human stdout when slice ends (plan-only, execute-only, review). |
-| `runPipeline/runPipelineDryRun.app.ts` | `--dry-run` validation for `aimo run`. |
 | `runPipeline/runPipelineLoadStages.app.ts` | Load merged config + resolve plan/execute/review bindings. |
-| `runPipeline/runPipelineChats.app.ts` | Select `IChatCompletionPort` for plan/review/workers (`fake`, `openrouter`, `openai-compat`). |
-| `runPipeline/runPipelineApplyShrinkers.app.ts` | After execute: run `pipeline.shrinkers` via cheap `IChatCompletionPort`, write `*.shrunk.md`, optional raw delete. |
-| `runPipeline/runPipelineReviewContext.app.ts` | Load diff + transcript for review (prefer `*.shrunk.md`). |
+| `runPipeline/runPipelineEmitStderrProgress.app.ts` | `run:` progress lines for `aimo run` (stderr; `--json` keeps stdout JSON-only). |
 | `runPipeline/resolveRunIdForPipelineSlice.app.ts` | Resolve or validate `.aimo/runs/<id>/` for a slice. |
-| `runPipeline/runPipelineWritePlanStep.app.ts` | Planner chat + `plan.md` / manifest write. |
-| `runPipeline/runPipelineWriteExecuteStep.app.ts` | Delegated spawn + diff / execute result artifacts. |
-| `runPipeline/runPipelineWriteReviewStep.app.ts` | Reviewer chat + `review.md`. |
-| `runPipeline/formatGitDiffHeadError.app.ts` | Merge optional `git diff HEAD` capture errors. |
-| `runPipeline/formatStageSliceForHumans.app.ts` | Human-readable `plan → execute` slice label. |
+| `runPipeline/dryRun/dryRunValidateBindings.app.ts` | Pure slice + binding validators (`validateBindingsForSlice`, etc.). |
+| `runPipeline/dryRun/runPipelineDryRun.app.ts` | `--dry-run` validation for `aimo run`. |
+| `runPipeline/plan/runPipelineWritePlanStep.app.ts` | Planner chat + `plan.md` / manifest write. |
+| `runPipeline/execute/runPipelineWriteExecuteStep.app.ts` | Delegated spawn + diff / execute result artifacts. |
+| `runPipeline/execute/runPipelineEmitExecuteFailure.app.ts` | JSON/human output for execute `spawn_fail`. |
+| `runPipeline/review/runPipelineWriteReviewStep.app.ts` | Reviewer chat + `review.md`. |
+| `runPipeline/review/runPipelineReviewContext.app.ts` | Load diff + transcript for review (prefer `*.shrunk.md`). |
+| `runPipeline/shrinkers/runPipelineApplyShrinkers.app.ts` | After execute: run `pipeline.shrinkers` via cheap `IChatCompletionPort`, write `*.shrunk.md`, optional raw delete. |
+| `runPipeline/shared/runPipelineChats.app.ts` | Select `IChatCompletionPort` for plan/review/workers (`fake`, `openrouter`, `openai-compat`). |
+| `runPipeline/shared/runPipelineBuildSuccessJsonSummary.app.ts` | Builds `aimo run --json` success payload (no I/O). |
+| `runPipeline/shared/runPipelineEmitHumanWriteComplete.app.ts` | Human stdout when slice ends (plan-only, execute-only, review). |
+| `runPipeline/shared/formatGitDiffHeadError.app.ts` | Merge optional `git diff HEAD` capture errors. |
+| `runPipeline/shared/formatStageSliceForHumans.app.ts` | Human-readable `plan → execute` slice label. |
 | `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider`, `OpenAiCompatChatProvider` factory, stage `assert*` wiring including `assertRunPipelineWired`. |
 
 ## `src/core/`
@@ -63,6 +64,7 @@
 | `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers (`plan.md`, `review.md`, diff files, …). |
 | `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
 | `runs/RunManifestJson.behavior.ts` | Serialize plan manifest to pretty JSON. |
+| `runs/isPathInsideRoot.behavior.ts` | Pure check: is `candidate` strictly inside `root` (after both have been resolved/realpathed). |
 | `execute/assertPlanPathAnchoredInRepoRoot.behavior.ts` | Reject plan paths that resolve outside repo root. |
 | `execute/ExecuteResultJson.behavior.ts` | Serialize `execute.result.json` (exit code + optional git error). |
 | `execute/isSafeRunDirectoryName.behavior.ts` | Reject unsafe `.aimo/runs/<id>/` directory names. |
@@ -103,10 +105,11 @@
 | `EnvLoader.bun.ts` | Read `./.env` + `~/.config/ai-model-orchestrator/.env`, merge with `process.env` via `mergeEnvLayers`. |
 | `ConfigLoader.bun.ts` | Read user `config.yaml` + `./aimo.yaml`, `mergeConfigRecordLayers`, Zod validate; `loadAimoConfigFromPaths` for tests. |
 | `ConfigInitWriter.bun.ts` | `runInitWrites` — mkdir user dir, conditional write / skip / overwrite for init. |
-| `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse. |
+| `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse with default 60s timeout (override via `AIMO_HTTP_TIMEOUT_MS`). |
 | `GitDiffHead.bun.ts` | `readGitDiffHeadText` — `git diff HEAD` capture for execute stage. |
-| `DelegatedSpawn.bun.ts` | `runDelegatedArgv` — `Bun.spawn` argv-only, optional stdin from `Bun.file`. |
-| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts` (+ stdout/stderr raw), `writeReviewMarkdown`. |
+| `DelegatedSpawn.bun.ts` | `runDelegatedArgv` — `Bun.spawn` argv-only, optional stdin from `Bun.file`. Inherits full `process.env` (delegated executors are TRUSTED). |
+| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths` (mode 0o700 + `realpath` symlink check), `writePlanArtifacts`, `writeExecuteStageArtifacts` (+ stdout/stderr raw), `writeReviewMarkdown`. |
+| `RunProgressStderrStyle.bun.ts` | `createRunProgressStderr(mode)` factory + module-default writers — colored `run:` lines on stderr (respects `NO_COLOR`, `--progress-color`, TTY). |
 | `WorkersSidecarJson.bun.ts` | Write `.aimo/runs/<id>/workers.json`. |
 
 ## `src/shared/`

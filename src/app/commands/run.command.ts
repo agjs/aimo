@@ -7,6 +7,7 @@
 import { EXIT_CONFIG_ERROR } from '@core/contracts/ExitCodes.constants';
 import { parsePipelineStageName } from '@core/run/resolvePipelineStageRange.behavior';
 import type { Command } from 'commander';
+import { Option } from 'commander';
 
 import { runAimoRunPipeline } from '../orchestrateRunPipeline.app';
 
@@ -48,6 +49,14 @@ export function registerRunCommand(program: Command): void {
       '--no-keep-raw',
       'after shrinkers run, delete raw context source files (overrides pipeline.keep_raw)',
     )
+    .addOption(
+      new Option(
+        '--progress-color <when>',
+        'ANSI colors on stderr run: lines: always (ignore TTY), auto, never (still obeys NO_COLOR)',
+      )
+        .choices(['always', 'auto', 'never'])
+        .default('auto'),
+    )
     .action(
       async (
         taskArg: string | undefined,
@@ -61,6 +70,7 @@ export function registerRunCommand(program: Command): void {
           dryRun?: boolean;
           /** Set to `false` when `--no-keep-raw` is passed (Commander negated flag). */
           keepRaw?: boolean;
+          progressColor: 'always' | 'auto' | 'never';
         },
       ): Promise<void> => {
         const cwd = process.cwd();
@@ -90,6 +100,7 @@ export function registerRunCommand(program: Command): void {
           json: options.json === true,
           dryRun: options.dryRun === true,
           ...(options.keepRaw === false ? { keepRaw: false } : {}),
+          progressColor: options.progressColor,
         });
 
         process.exit(exitCode);

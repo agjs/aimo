@@ -142,7 +142,7 @@ You can run the full pipeline with `aimo run`, or step by step with `aimo plan` 
 
 ## Commands
 
-Common flags: every command accepts `--json` (machine-readable single line on stdout) and exits with a code from the [`Exit codes`](#exit-codes) table.
+Common flags: every command accepts `--json` (machine-readable single line on stdout) and exits with a code from the [`Exit codes`](#exit-codes) table. For `aimo run`, stage progress and delegated child output (e.g. aider) are written to **stderr** so you can still pipe stdout: `aimo run "…" --json | jq .`.
 
 ### `aimo init`
 
@@ -215,7 +215,12 @@ aimo run "Re-review only" --run 9f3c8e22 --from review --to review
 aimo run "..." --dry-run                 # validate config only, no artifacts
 aimo run "..." --json
 aimo run "..." --no-keep-raw             # delete raw context files after shrinking (overrides YAML)
+aimo run "..." --progress-color always   # stderr `run:` lines: color even if TTY detection fails (obeys NO_COLOR)
 ```
+
+Stderr `run:` progress uses ANSI when auto-detection succeeds (`stdout`/`stderr` TTY, `FORCE_COLOR`, `CLICOLOR_FORCE=1`, CI, …). If your terminal still shows them plain white, try `--progress-color always` or `FORCE_COLOR=1`.
+
+**Color precedence** (highest first): `NO_COLOR` and `NODE_DISABLE_COLORS` always disable color, regardless of `--progress-color always` or `FORCE_COLOR`. After that, `--progress-color never|always` is a hard override; `auto` defers to `FORCE_COLOR`/`CLICOLOR_FORCE`/CI/Windows/TTY detection.
 
 `--dry-run` validates: stage range parses, profile is present, plan/execute/review providers resolve, run-id is safe (when not starting at plan), workers and shrinker references resolve.
 
@@ -233,12 +238,12 @@ The expensive model should never read raw command output. The pattern: **cheap w
 workers:
   log_squeezer:
     provider: openrouter
-    model: mistralai/mistral-small
+    model: mistralai/mistral-small-3.1-24b-instruct
     max_chars_in: 200000
     max_chars_out: 4000
   diff_summarizer:
     provider: openrouter
-    model: mistralai/mistral-small
+    model: mistralai/mistral-small-3.1-24b-instruct
     max_chars_in: 400000
     max_chars_out: 6000
 
@@ -298,7 +303,7 @@ Each run writes `.aimo/runs/<id>/workers.json`:
       "source": "execute.git_diff_after",
       "worker": "diff_summarizer",
       "provider": "openrouter",
-      "model": "mistralai/mistral-small",
+      "model": "mistralai/mistral-small-3.1-24b-instruct",
       "chars_in": 311022,
       "chars_out": 5840,
       "prompt_tokens": 78000,

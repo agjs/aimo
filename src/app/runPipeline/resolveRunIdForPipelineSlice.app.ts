@@ -8,6 +8,10 @@ import { randomUUID } from 'node:crypto';
 
 import { EXIT_CONFIG_ERROR, EXIT_OPERATIONAL_ERROR } from '@core/contracts/ExitCodes.constants';
 import { isSafeRunDirectoryName } from '@core/execute/isSafeRunDirectoryName.behavior';
+import {
+  writeRunProgressErrorLine,
+  writeRunProgressWarnLine,
+} from '@runtime/bun/RunProgressStderrStyle.bun';
 
 /**
  * Resolves the run directory id for a pipeline slice.
@@ -24,7 +28,7 @@ export function resolveRunIdForPipelineSlice(
 
     if (explicit !== undefined && explicit.length > 0) {
       if (!isSafeRunDirectoryName(explicit)) {
-        process.stderr.write('run: invalid --run id (use a UUID with no path separators)\n');
+        writeRunProgressWarnLine('invalid --run id (use a UUID with no path separators)');
         return { ok: false, exitCode: EXIT_OPERATIONAL_ERROR };
       }
 
@@ -34,7 +38,7 @@ export function resolveRunIdForPipelineSlice(
     const runId = randomUUID();
 
     if (!isSafeRunDirectoryName(runId)) {
-      process.stderr.write('run: internal error — generated run id was rejected\n');
+      writeRunProgressErrorLine('internal error — generated run id was rejected');
       return { ok: false, exitCode: EXIT_OPERATIONAL_ERROR };
     }
 
@@ -44,8 +48,8 @@ export function resolveRunIdForPipelineSlice(
   const rid = explicitRunId?.trim() ?? '';
 
   if (!isSafeRunDirectoryName(rid)) {
-    process.stderr.write(
-      'run: --run <id> is required when --from is execute or review (use the run id under .aimo/runs/)\n',
+    writeRunProgressWarnLine(
+      '--run <id> is required when --from is execute or review (use the run id under .aimo/runs/)',
     );
     return { ok: false, exitCode: EXIT_CONFIG_ERROR };
   }

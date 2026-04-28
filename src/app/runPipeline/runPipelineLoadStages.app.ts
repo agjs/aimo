@@ -13,9 +13,16 @@ import { resolvePlanStageForProfile } from '@core/plan/ResolvePlanStage.behavior
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
 import { firstShrinkerWorkerPerSource } from '@core/workers/FirstShrinkerPerSource.behavior';
+import {
+  writeRunProgressWarnLine,
+  writeRunStyledMessage,
+} from '@runtime/bun/RunProgressStderrStyle.bun';
 
 import { loadResolvedAimoConfig } from '../wireDefaults';
-import { selectPlanChatPortForRun, selectReviewChatPortForRun } from './runPipelineChats.app';
+import {
+  selectPlanChatPortForRun,
+  selectReviewChatPortForRun,
+} from './shared/runPipelineChats.app';
 
 /**
  * Resolved ports and models for each stage requested in the slice.
@@ -64,7 +71,7 @@ export async function loadRunPipelineStageBindings(
 
   if (!loaded.ok) {
     for (const m of loaded.messages) {
-      process.stderr.write(`${m}\n`);
+      writeRunStyledMessage(`${m}\n`, 'warn');
     }
 
     return { ok: false, exitCode: EXIT_CONFIG_ERROR };
@@ -81,7 +88,7 @@ export async function loadRunPipelineStageBindings(
     const resolvedPlan = resolvePlanStageForProfile(cfg, profileName);
 
     if (!resolvedPlan.ok) {
-      process.stderr.write(`${resolvedPlan.message}\n`);
+      writeRunStyledMessage(`${resolvedPlan.message}\n`, 'warn');
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }
 
@@ -89,8 +96,8 @@ export async function loadRunPipelineStageBindings(
     planModel = resolvedPlan.plan.model;
     planChat = selectPlanChatPortForRun(resolvedPlan.plan);
     if (!planChat) {
-      process.stderr.write(
-        `run: plan provider "${planProvider}" is not supported yet (use provider: fake for now)\n`,
+      writeRunProgressWarnLine(
+        `plan provider "${planProvider}" is not supported yet (use provider: fake for now)`,
       );
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }
@@ -102,7 +109,7 @@ export async function loadRunPipelineStageBindings(
     const r = resolveDelegatedExecuteForProfile(cfg, profileName);
 
     if (!r.ok) {
-      process.stderr.write(`${r.message}\n`);
+      writeRunStyledMessage(`${r.message}\n`, 'warn');
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }
 
@@ -117,7 +124,7 @@ export async function loadRunPipelineStageBindings(
     const resolvedReview = resolveReviewStageForProfile(cfg, profileName);
 
     if (!resolvedReview.ok) {
-      process.stderr.write(`${resolvedReview.message}\n`);
+      writeRunStyledMessage(`${resolvedReview.message}\n`, 'warn');
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }
 
@@ -125,8 +132,8 @@ export async function loadRunPipelineStageBindings(
     reviewModel = resolvedReview.review.model;
     reviewChat = selectReviewChatPortForRun(resolvedReview.review);
     if (!reviewChat) {
-      process.stderr.write(
-        `run: review provider "${reviewProvider}" is not supported yet (use provider: fake for now)\n`,
+      writeRunProgressWarnLine(
+        `review provider "${reviewProvider}" is not supported yet (use provider: fake for now)`,
       );
       return { ok: false, exitCode: EXIT_CONFIG_ERROR };
     }

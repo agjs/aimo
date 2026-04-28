@@ -19,9 +19,13 @@ import {
 } from '@core/runs/AimoRunPaths.constants';
 import { runDelegatedArgv } from '@runtime/bun/DelegatedSpawn.bun';
 import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
+import {
+  writeRunProgressWarnLine,
+  writeRunStyledMessage,
+} from '@runtime/bun/RunProgressStderrStyle.bun';
 import { writeExecuteStageArtifacts } from '@runtime/bun/RunWorkspace.bun';
 
-import { formatGitDiffHeadError } from './formatGitDiffHeadError.app';
+import { formatGitDiffHeadError } from '../shared/formatGitDiffHeadError.app';
 
 /**
  * Result of a successful delegated execute (spawn exit 0).
@@ -69,8 +73,8 @@ export async function writeRunPipelineExecuteStep(input: {
   const planExists = await Bun.file(planPath).exists();
 
   if (!planExists) {
-    process.stderr.write(
-      `run: plan file missing at ${planPath} (run a slice that includes plan first, or \`aimo plan\`)\n`,
+    writeRunProgressWarnLine(
+      `plan file missing at ${planPath} (run a slice that includes plan first, or \`aimo plan\`)`,
     );
     return { kind: 'missing_plan' };
   }
@@ -78,23 +82,33 @@ export async function writeRunPipelineExecuteStep(input: {
   const anchored = assertPlanPathAnchoredInRepoRoot({ repoRoot: input.cwd, planPath });
 
   if (!anchored.ok) {
-    process.stderr.write(`${anchored.message}\n`);
+    writeRunStyledMessage(`${anchored.message}\n`, 'warn');
     return { kind: 'anchor_fail' };
   }
 
   const argvResolved = substitutePlanPathInArgv(input.execCfg.command, anchored.planPathResolved);
   const stdinPath = input.execCfg.pipePlanToStdin ? anchored.planPathResolved : undefined;
+
   const beforeDiff = await readGitDiffHeadText(input.cwd);
+
   const spawned =
     stdinPath !== undefined
       ? await runDelegatedArgv({
           cwd: input.cwd,
           argv: [...argvResolved],
           stdinPlanFilePath: stdinPath,
+          streamProgressToStderr: true,
         })
-      : await runDelegatedArgv({ cwd: input.cwd, argv: [...argvResolved] });
+      : await runDelegatedArgv({
+          cwd: input.cwd,
+          argv: [...argvResolved],
+          streamProgressToStderr: true,
+        });
+
   const afterDiff = await readGitDiffHeadText(input.cwd);
+
   const gitDiffHeadError = formatGitDiffHeadError(beforeDiff, afterDiff);
+
   const executeRecord = {
     schema_version: CURRENT_SCHEMA_VERSION,
     run_id: input.runId,
@@ -102,6 +116,7 @@ export async function writeRunPipelineExecuteStep(input: {
     exit_code: spawned.exitCode,
     git_diff_head_error: gitDiffHeadError,
   };
+
   await writeExecuteStageArtifacts(input.runDir, {
     gitDiffBefore: beforeDiff.ok ? beforeDiff.text : '',
     gitDiffAfter: afterDiff.ok ? afterDiff.text : '',

@@ -12,6 +12,10 @@ import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.
 import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
 import { PLAN_MD_FILENAME, REVIEW_MD_FILENAME } from '@core/runs/AimoRunPaths.constants';
 import { runReviewChat } from '@features/reviewStage.feature';
+import {
+  writeRunProgressWarnLine,
+  writeRunStyledMessage,
+} from '@runtime/bun/RunProgressStderrStyle.bun';
 import { writeReviewMarkdown } from '@runtime/bun/RunWorkspace.bun';
 
 import { loadReviewDiffAndTranscriptFromRunDir } from './runPipelineReviewContext.app';
@@ -44,7 +48,7 @@ export async function writeRunPipelineReviewStep(input: {
   const planFile = Bun.file(planPath);
 
   if (!(await planFile.exists())) {
-    process.stderr.write(`run: plan file missing at ${planPath}\n`);
+    writeRunProgressWarnLine(`plan file missing at ${planPath}`);
     return { ok: false };
   }
 
@@ -62,7 +66,7 @@ export async function writeRunPipelineReviewStep(input: {
   const ensured = ensureVerdictForPersistedReview(reviewRaw, input.reviewProvider);
 
   if (!ensured.ok) {
-    process.stderr.write(`${ensured.message}\n`);
+    writeRunStyledMessage(`${ensured.message}\n`, 'warn');
     return { ok: false };
   }
 

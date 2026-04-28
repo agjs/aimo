@@ -20,7 +20,7 @@ import {
   selectPlanChatPortForRun,
   selectReviewChatPortForRun,
   selectWorkerChatPortForRun,
-} from './runPipelineChats.app';
+} from '../shared/runPipelineChats.app';
 
 /** Standard validation result without side effects. */
 export type TValidation = { readonly ok: true } | { readonly ok: false; readonly message: string };

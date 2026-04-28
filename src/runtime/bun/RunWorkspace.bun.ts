@@ -4,8 +4,8 @@
  * @description Create `.aimo/runs/<id>/` and write UTF-8 artifacts for a run.
  */
 
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, realpath, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 
 import {
   EXECUTE_RESULT_JSON_BASENAME,
@@ -18,12 +18,16 @@ import {
   relativeRunDirectoryPath,
   REVIEW_MD_FILENAME,
 } from '@core/runs/AimoRunPaths.constants';
+import { isPathInsideRoot } from '@core/runs/isPathInsideRoot.behavior';
 
 /**
  * Ensures the run directory exists and returns absolute paths to standard artifacts.
+ * Refuses to proceed when symlinks redirect the run dir outside `cwd` (defends against
+ * a pre-created `.aimo/runs/<id>/` symlink pointing at an attacker-owned location).
  * @param cwd - Repository root (typically `process.cwd()`).
  * @param runId - Unique run identifier (UUID from the app layer).
  * @returns Absolute `runDir`, `planPath`, and `manifestPath`.
+ * @throws {Error} When the resolved run directory escapes the repository root.
  */
 export async function prepareRunArtifactPaths(
   cwd: string,
@@ -36,7 +40,17 @@ export async function prepareRunArtifactPaths(
   const rel = relativeRunDirectoryPath(runId);
   const segments = rel.split('/');
   const runDir = join(cwd, ...segments);
-  await mkdir(runDir, { recursive: true });
+  await mkdir(runDir, { recursive: true, mode: 0o700 });
+
+  const cwdReal = await realpath(resolve(cwd));
+  const runDirReal = await realpath(runDir);
+
+  if (!isPathInsideRoot(cwdReal, runDirReal)) {
+    throw new Error(
+      `run directory resolves outside repository root via symlink: ${runDirReal} not under ${cwdReal}`,
+    );
+  }
+
   return {
     runDir,
     planPath: join(runDir, PLAN_MD_FILENAME),

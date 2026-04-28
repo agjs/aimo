@@ -7,17 +7,22 @@
 import { EXIT_OPERATIONAL_ERROR, EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
 import type { TReviewVerdict } from '@core/review/ParseReviewVerdict.behavior';
 import { serializeWorkersSidecarJson } from '@core/workers/SerializeWorkersSidecar.behavior';
+import { setRunProgressColorPreference } from '@runtime/bun/RunProgressStderrStyle.bun';
 import { writeWorkersSidecarJson } from '@runtime/bun/WorkersSidecarJson.bun';
 
-import { runPipelineApplyShrinkers } from './runPipelineApplyShrinkers.app';
-import { buildSuccessfulRunJsonSummary } from './runPipelineBuildSuccessJsonSummary.app';
-import { runDryRunPipeline } from './runPipelineDryRun.app';
-import { emitExecuteSpawnFailure } from './runPipelineEmitExecuteFailure.app';
+import { runDryRunPipeline } from './dryRun/runPipelineDryRun.app';
+import { emitExecuteSpawnFailure } from './execute/runPipelineEmitExecuteFailure.app';
+import type { TRunPipelineExecuteOk } from './execute/runPipelineWriteExecuteStep.app';
 import {
-  emitHumanExecuteOnlyComplete,
-  emitHumanPlanOnlyComplete,
-  emitHumanReviewComplete,
-} from './runPipelineEmitHumanWriteComplete.app';
+  emitRunStderrExecuteAfter,
+  emitRunStderrExecuteBefore,
+  emitRunStderrPlanAfter,
+  emitRunStderrPlanBefore,
+  emitRunStderrReviewBefore,
+  emitRunStderrShrinkersAfter,
+  emitRunStderrShrinkersBefore,
+  emitRunStderrStarting,
+} from './runPipelineEmitStderrProgress.app';
 import {
   preflightRunPipelineWrite,
   type TWritePreflightContext,
@@ -30,7 +35,13 @@ import {
   runPipelineReviewWritePhase,
 } from './runPipelineRunWritePhases.app';
 import type { TRunPipelineOptions } from './runPipelineTypes.app';
-import type { TRunPipelineExecuteOk } from './runPipelineWriteExecuteStep.app';
+import { buildSuccessfulRunJsonSummary } from './shared/runPipelineBuildSuccessJsonSummary.app';
+import {
+  emitHumanExecuteOnlyComplete,
+  emitHumanPlanOnlyComplete,
+  emitHumanReviewComplete,
+} from './shared/runPipelineEmitHumanWriteComplete.app';
+import { runPipelineApplyShrinkers } from './shrinkers/runPipelineApplyShrinkers.app';
 
 export type { TRunPipelineOptions } from './runPipelineTypes.app';
 
@@ -40,6 +51,8 @@ export type { TRunPipelineOptions } from './runPipelineTypes.app';
  * @returns Process exit code per `ExitCodes` and review verdict mapping.
  */
 export async function runAimoRunPipeline(options: TRunPipelineOptions): Promise<number> {
+  setRunProgressColorPreference(options.progressColor ?? 'auto');
+
   if (options.dryRun) {
     return runDryRunPipeline(options);
   }
@@ -62,7 +75,13 @@ async function runPipelineStagesWrite(options: TRunPipelineOptions): Promise<num
   const { ctx } = pre;
   const { slice } = ctx;
 
+  emitRunStderrStarting(ctx);
+  emitRunStderrPlanBefore(ctx);
+
   const { planMarkdown } = await runPipelinePlanWritePhase(ctx, options.task.trim());
+
+  emitRunStderrPlanAfter(ctx);
+  emitRunStderrExecuteBefore(ctx);
 
   const execResult = await runPipelineExecuteWritePhase(ctx);
 
@@ -84,7 +103,10 @@ async function runPipelineStagesWrite(options: TRunPipelineOptions): Promise<num
 
   const executeForHumanAndJson = execResult.outcome === 'ok' ? execResult.execute : null;
 
+  emitRunStderrExecuteAfter(slice, execResult);
+
   if (execResult.outcome === 'ok' && slice.needExec && ctx.loaded.shrinkers.length > 0) {
+    emitRunStderrShrinkersBefore(ctx.loaded.shrinkers.length);
     const { calls } = await runPipelineApplyShrinkers({
       runDir: ctx.paths.runDir,
       aimoConfig: ctx.loaded.aimoConfig,
@@ -95,7 +117,10 @@ async function runPipelineStagesWrite(options: TRunPipelineOptions): Promise<num
       ctx.paths.runDir,
       serializeWorkersSidecarJson({ schema_version: 1, run_id: ctx.runId, calls }),
     );
+    emitRunStderrShrinkersAfter();
   }
+
+  emitRunStderrReviewBefore(ctx);
 
   const revResult = await runPipelineReviewWritePhase(ctx);
 
@@ -188,8 +213,6 @@ function emitRunPipelineSliceSuccessOutput(
     emitHumanReviewComplete({
       runId: ctx.runId,
       stages: slice.stages,
-      needExec: slice.needExec,
-      execute: executeForHumanAndJson,
       reviewMarkdownOut: revResult.markdownOut,
     });
     return;
@@ -208,7 +231,6 @@ function emitRunPipelineSliceSuccessOutput(
     emitHumanExecuteOnlyComplete({
       runId: ctx.runId,
       stages: slice.stages,
-      execute: execResult.execute,
     });
   }
 }

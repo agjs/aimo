@@ -14,7 +14,7 @@ import { runPlanChat } from '@features/planStage.feature';
 import { prepareRunArtifactPaths, writePlanArtifacts } from '@runtime/bun/RunWorkspace.bun';
 import type { Command } from 'commander';
 
-import { selectPlanChatPortForRun } from '../runPipeline/runPipelineChats.app';
+import { selectPlanChatPortForRun } from '../runPipeline/shared/runPipelineChats.app';
 import { createDefaultClockPort, loadResolvedAimoConfig } from '../wireDefaults';
 
 /**

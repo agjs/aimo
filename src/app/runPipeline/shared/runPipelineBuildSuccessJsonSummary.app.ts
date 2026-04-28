@@ -10,8 +10,8 @@ import type { TPipelineStageName } from '@core/run/resolvePipelineStageRange.beh
 import {
   runPipelineExecuteArtifactPaths,
   type TRunPipelineExecuteOk,
-} from './runPipelineWriteExecuteStep.app';
-import { runPipelineReviewMdPath } from './runPipelineWriteReviewStep.app';
+} from '../execute/runPipelineWriteExecuteStep.app';
+import { runPipelineReviewMdPath } from '../review/runPipelineWriteReviewStep.app';
 
 /**
  * Builds the JSON object written after a successful slice (all requested stages completed).

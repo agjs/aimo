@@ -26,8 +26,13 @@ coverage/
 .env.local
 .env.*.local
 
+# Local aimo config (per-developer)
+/aimo.yaml
+/aimo.yml
+
 # Build outputs
 *.tsbuildinfo
 
 # OS
 Thumbs.db
+.aider*

@@ -28,35 +28,8 @@ import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
 import { prepareRunArtifactPaths, writeExecuteStageArtifacts } from '@runtime/bun/RunWorkspace.bun';
 import type { Command } from 'commander';
 
+import { formatGitDiffHeadError } from '../runPipeline/shared/formatGitDiffHeadError.app';
 import { loadResolvedAimoConfig } from '../wireDefaults';
-
-type TGitDiffCapture = { ok: true; text: string } | { ok: false; reason: string };
-
-/**
- * Combines optional `git diff HEAD` failures into one nullable error string.
- * @param before - Capture before delegated spawn.
- * @param after - Capture after delegated spawn.
- * @returns Human-readable combined error, or `null` when both succeeded.
- */
-function formatGitDiffHeadError(before: TGitDiffCapture, after: TGitDiffCapture): string | null {
-  if (before.ok && after.ok) {
-    return null;
-  }
-
-  if (before.ok === false && after.ok === false) {
-    return `before: ${before.reason}; after: ${after.reason}`;
-  }
-
-  if (before.ok === false) {
-    return `before: ${before.reason}`;
-  }
-
-  if (after.ok === false) {
-    return `after: ${after.reason}`;
-  }
-
-  return null;
-}
 
 /**
  * Runs one delegated execute for an existing run directory (plan.md must exist).
@@ -121,10 +94,16 @@ async function runExecuteDelegatedOnce(options: {
   );
   const stdinPath = resolvedExec.execute.pipePlanToStdin ? anchored.planPathResolved : undefined;
   const beforeDiff = await readGitDiffHeadText(cwd);
+  const streamProgressToStderr = options.json === true;
   const spawned =
     stdinPath !== undefined
-      ? await runDelegatedArgv({ cwd, argv: argvResolved, stdinPlanFilePath: stdinPath })
-      : await runDelegatedArgv({ cwd, argv: argvResolved });
+      ? await runDelegatedArgv({
+          cwd,
+          argv: argvResolved,
+          stdinPlanFilePath: stdinPath,
+          streamProgressToStderr,
+        })
+      : await runDelegatedArgv({ cwd, argv: argvResolved, streamProgressToStderr });
   const afterDiff = await readGitDiffHeadText(cwd);
   const gitDiffHeadError = formatGitDiffHeadError(beforeDiff, afterDiff);
   const executeRecord = {

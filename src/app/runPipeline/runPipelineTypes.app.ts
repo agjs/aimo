@@ -36,4 +36,6 @@ export type TRunPipelineOptions = {
    * When `undefined`, use `pipeline.keep_raw` from merged YAML (default true).
    */
   readonly keepRaw?: boolean;
+  /** When to emit ANSI colors on stderr `run:` progress lines (CLI `--progress-color`). */
+  readonly progressColor?: 'always' | 'auto' | 'never';
 };
