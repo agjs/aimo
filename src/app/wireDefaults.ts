@@ -11,6 +11,11 @@ import {
 } from '@core/config/AimoInitTemplates.behavior';
 import { mergeConfigRecordLayers } from '@core/config/deepMergeRecord.behavior';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
+import { assertPlanPathAnchoredInRepoRoot } from '@core/execute/assertPlanPathAnchoredInRepoRoot.behavior';
+import { serializeExecuteResultJson } from '@core/execute/ExecuteResultJson.behavior';
+import { isSafeRunDirectoryName } from '@core/execute/isSafeRunDirectoryName.behavior';
+import { resolveDelegatedExecuteForProfile } from '@core/execute/ResolveDelegatedExecute.behavior';
+import { substitutePlanPathInArgv } from '@core/execute/substitutePlanPathInArgv.behavior';
 import { CleanupRegistry } from '@core/lifecycle/CleanupRegistry.behavior';
 import { buildPlanMessages } from '@core/plan/BuildPlanMessages.behavior';
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
@@ -23,8 +28,10 @@ import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.pro
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
 import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
 import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
+import { runDelegatedArgv } from '@runtime/bun/DelegatedSpawn.bun';
+import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
 import { BunHttpPort } from '@runtime/bun/HttpPort.bun';
-import { prepareRunArtifactPaths } from '@runtime/bun/RunWorkspace.bun';
+import { prepareRunArtifactPaths, writeExecuteStageArtifacts } from '@runtime/bun/RunWorkspace.bun';
 
 /**
  * Creates the default wall-clock port for production-style runs.
@@ -85,6 +92,35 @@ export function assertAimoConfigWiring(): void {
   void loadAimoConfigFromPaths;
   void loadResolvedAimoConfig;
   void runInitWrites;
+}
+
+/**
+ * Keeps delegated execute + git diff wiring in the dependency graph for `aimo execute`.
+ */
+export function assertExecuteStageWired(): void {
+  void substitutePlanPathInArgv(['cat', '{plan_path}'], '/repo/plan.md');
+  void assertPlanPathAnchoredInRepoRoot({ repoRoot: '/repo', planPath: '/repo/sub/plan.md' });
+  void isSafeRunDirectoryName('00000000-0000-0000-0000-000000000000');
+  const execCfg = safeParseAimoConfig({
+    schema_version: 1,
+    default_profile: 'default',
+    profiles: {
+      default: { execute: { type: 'delegated', command: ['true'] } },
+    },
+  });
+  if (execCfg.ok) {
+    void resolveDelegatedExecuteForProfile(execCfg.data, 'default');
+  }
+  void serializeExecuteResultJson({
+    schema_version: CURRENT_SCHEMA_VERSION,
+    run_id: 'wire',
+    stage: 'execute',
+    exit_code: 0,
+    git_diff_head_error: null,
+  });
+  void readGitDiffHeadText;
+  void runDelegatedArgv;
+  void writeExecuteStageArtifacts;
 }
 
 /**

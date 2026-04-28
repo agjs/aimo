@@ -8,6 +8,9 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import {
+  EXECUTE_RESULT_JSON_BASENAME,
+  GIT_DIFF_AFTER_BASENAME,
+  GIT_DIFF_BEFORE_BASENAME,
   MANIFEST_JSON_FILENAME,
   PLAN_MD_FILENAME,
   relativeRunDirectoryPath,
@@ -56,4 +59,25 @@ export async function writePlanArtifacts(
 ): Promise<void> {
   await writeFile(paths.manifestPath, bodies.manifestJson, 'utf8');
   await writeFile(paths.planPath, bodies.planMarkdown, 'utf8');
+}
+
+/**
+ * Writes execute-stage artifacts under an existing run directory.
+ * @param runDir - Absolute `.aimo/runs/<id>/` path.
+ * @param bodies - UTF-8 bodies for diff snapshots and result JSON.
+ * @param bodies.gitDiffBefore - `git diff HEAD` text captured before spawn.
+ * @param bodies.gitDiffAfter - `git diff HEAD` text captured after spawn.
+ * @param bodies.executeResultJson - Pretty JSON for {@link EXECUTE_RESULT_JSON_BASENAME}.
+ */
+export async function writeExecuteStageArtifacts(
+  runDir: string,
+  bodies: {
+    readonly gitDiffBefore: string;
+    readonly gitDiffAfter: string;
+    readonly executeResultJson: string;
+  },
+): Promise<void> {
+  await writeFile(join(runDir, GIT_DIFF_BEFORE_BASENAME), bodies.gitDiffBefore, 'utf8');
+  await writeFile(join(runDir, GIT_DIFF_AFTER_BASENAME), bodies.gitDiffAfter, 'utf8');
+  await writeFile(join(runDir, EXECUTE_RESULT_JSON_BASENAME), bodies.executeResultJson, 'utf8');
 }

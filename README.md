@@ -17,6 +17,8 @@ bun src/app/cli.ts init --json   # optional: write starter ~/.config/.../config.
 bun src/app/cli.ts doctor --json # validate merged config
 bun src/app/cli.ts ping --json  # one fake chat completion (smoke)
 bun src/app/cli.ts plan 'your task' --json  # planner stage → `.aimo/runs/<uuid>/plan.md` + manifest
+# after overriding profile execute to `type: delegated` in ./aimo.yaml:
+bun src/app/cli.ts execute --run '<uuid-from-plan-json>' --json
 bun src/app/cli.ts --help
 ```
 

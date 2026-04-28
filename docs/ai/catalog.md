@@ -11,7 +11,8 @@
 | `commands/init.command.ts` | `aimo init` — writes starter `config.yaml` / `aimo.yaml` (`--global-only`, `--local-only`, `--force`, `--json`). |
 | `commands/ping.command.ts` | `aimo ping` / `--json` — one round-trip through `InProcessFakeChatProvider` (CI smoke). |
 | `commands/plan.command.ts` | `aimo plan` / `--json` — planner chat, `.aimo/runs/<id>/plan.md` + `manifest.json` (fake provider for now). |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertPlanStageWired`. |
+| `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertExecuteStageWired`, `assertPlanStageWired`. |
 
 ## `src/core/`
 
@@ -22,7 +23,7 @@
 | `config/DotEnvParse.behavior.ts` | Pure `.env` text → map parser. |
 | `config/EnvPrecedence.behavior.ts` | Pure merge of env maps (process wins over files). |
 | `config/deepMergeRecord.behavior.ts` | Deep-merge YAML roots; project `aimo.yaml` overlays user `config.yaml`. |
-| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML (delegated execute rules). |
+| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML; `PLAN_PATH_TEMPLATE_TOKEN` for argv + stdin sentinel. |
 | `config/AimoInitTemplates.behavior.ts` | Commented starter YAML strings for `aimo init` (validated against schema). |
 | `lifecycle/CleanupRegistry.behavior.ts` | Pure LIFO cleanup registration (signals wired in `runtime/`). |
 | `chat/ChatCompletion.types.ts` | OpenAI-shaped chat completion request/response types (non-streaming v1). |
@@ -34,6 +35,11 @@
 | `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers. |
 | `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
 | `runs/RunManifestJson.behavior.ts` | Serialize plan manifest to pretty JSON. |
+| `execute/assertPlanPathAnchoredInRepoRoot.behavior.ts` | Reject plan paths that resolve outside repo root. |
+| `execute/ExecuteResultJson.behavior.ts` | Serialize `execute.result.json` (exit code + optional git error). |
+| `execute/isSafeRunDirectoryName.behavior.ts` | Reject unsafe `.aimo/runs/<id>/` directory names. |
+| `execute/ResolveDelegatedExecute.behavior.ts` | Resolve `profiles.*.execute` when `type: delegated`. |
+| `execute/substitutePlanPathInArgv.behavior.ts` | Replace `{plan_path}` in argv strings. |
 
 ## `src/features/`
 
@@ -57,7 +63,9 @@
 | `ConfigLoader.bun.ts` | Read user `config.yaml` + `./aimo.yaml`, `mergeConfigRecordLayers`, Zod validate; `loadAimoConfigFromPaths` for tests. |
 | `ConfigInitWriter.bun.ts` | `runInitWrites` — mkdir user dir, conditional write / skip / overwrite for init. |
 | `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse. |
-| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts` — `.aimo/runs/<id>/` on disk. |
+| `GitDiffHead.bun.ts` | `readGitDiffHeadText` — `git diff HEAD` capture for execute stage. |
+| `DelegatedSpawn.bun.ts` | `runDelegatedArgv` — `Bun.spawn` argv-only, optional stdin from `Bun.file`. |
+| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts`. |
 
 ## `src/shared/`
 
@@ -72,7 +80,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `execute`, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
-| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `runWorkspace`, wiring smoke). |
+| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |

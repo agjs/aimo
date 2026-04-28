@@ -16,6 +16,15 @@ export const PLAN_MD_FILENAME = 'plan.md' as const;
 /** Per-run metadata JSON. */
 export const MANIFEST_JSON_FILENAME = 'manifest.json' as const;
 
+/** `git diff HEAD` text captured before delegated spawn. */
+export const GIT_DIFF_BEFORE_BASENAME = 'git.diff.before.txt' as const;
+
+/** `git diff HEAD` text captured after delegated spawn. */
+export const GIT_DIFF_AFTER_BASENAME = 'git.diff.after.txt' as const;
+
+/** Execute-stage summary (exit code, git capture errors). */
+export const EXECUTE_RESULT_JSON_BASENAME = 'execute.result.json' as const;
+
 /**
  * Relative directory for one run (POSIX slashes).
  * @param runId - Opaque run identifier (e.g. UUID).

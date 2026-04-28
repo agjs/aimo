@@ -6,8 +6,14 @@
 
 import { z } from 'zod';
 
-/** Allowed `stdin_file` sentinel for delegated execute (plan path never appears in argv). */
-export const PLAN_PATH_STDIN_SENTINEL = '{plan_path}' as const;
+/**
+ * Literal `{plan_path}` token: replaced in delegated `command[]` argv entries, and optional `stdin_file`
+ * value (plan bytes piped to stdin — never embedded in argv).
+ */
+export const PLAN_PATH_TEMPLATE_TOKEN = '{plan_path}' as const;
+
+/** Same as {@link PLAN_PATH_TEMPLATE_TOKEN} (stdin_file literal in YAML). */
+export const PLAN_PATH_STDIN_SENTINEL = PLAN_PATH_TEMPLATE_TOKEN;
 
 const llmStageSchema = z.object({
   provider: z.string().min(1),
@@ -18,7 +24,7 @@ const llmStageSchema = z.object({
 const delegatedExecuteSchema = z.object({
   type: z.literal('delegated'),
   command: z.array(z.string().min(1)).min(1),
-  stdin_file: z.literal(PLAN_PATH_STDIN_SENTINEL).optional(),
+  stdin_file: z.literal(PLAN_PATH_TEMPLATE_TOKEN).optional(),
 });
 
 const builtinExecuteSchema = z.object({
