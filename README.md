@@ -10,16 +10,14 @@ AI pricing and quotas are shifting: blanket “all tasks on the flagship model�
 
 > The era of assuming infinitely cheap API access is ending. aimo helps you **compose** providers (local, hosted, OpenRouter-style gateways, whatever you wire in) instead of paying flagship rates for every step.
 
-## What you get today
+## Features
 
 - **YAML profiles** — bind **plan**, **execute**, and **review** independently (`provider`, `model`, optional `base_url` per LLM stage).
 - **Merged config** — `~/.config/ai-model-orchestrator/config.yaml` plus repo-local `./aimo.yaml` (deep merge; project wins).
-- **Artifacts on disk** — each run under `.aimo/runs/<id>/` (e.g. `plan.md`, review output, manifest).
-- **Bun + TypeScript CLI** — `plan` → `execute` → `review` pipelines, `--json` for automation, `--dry-run` to validate bindings.
+- **Run artifacts** — each run under `.aimo/runs/<id>/` (`plan.md`, `review.md`, diffs, manifest, and related files).
+- **CLI** — `plan` → `execute` → `review` (or `run` for the full slice), `--json` for automation, `--dry-run` to validate config and bindings without writing a new run.
 
-**Where we are:** Phase 0 vertical slice. Plan and review stages use the in-repo **`fake`** chat provider for smoke tests and CI; the config and port layout are meant to grow into HTTP adapters (OpenAI-compatible and friends), local inference, and a future **lab bench** (compare profiles, cost inspection — see roadmap). If you want real LLMs today, you extend or plug the same boundaries — the thesis is **pluggable stages**, not a single hard-coded vendor.
-
-**Roadmap and backlog:** [`docs/ai/roadmap.md`](./docs/ai/roadmap.md)
+For roadmap and deeper design notes, see [`docs/ai/roadmap.md`](./docs/ai/roadmap.md).
 
 ## Install
 
@@ -78,11 +76,9 @@ aimo run "your task" --dry-run --json  # validate config + bindings only
 aimo --help
 ```
 
-See [`USAGE.md`](./USAGE.md) for the full per-command reference, exit codes, and recipes.
+See [`USAGE.md`](./USAGE.md) for commands, exit codes, config merge rules, and recipes.
 
-**Config:** See [`docs/ai/roadmap.md`](./docs/ai/roadmap.md) (Milestone A) and `ConfigLoader.bun.ts` JSDoc for merge rules.
-
-**Check setup:** `bun src/app/cli.ts doctor` (human summary) or `bun src/app/cli.ts doctor --json` (machine-readable; exit `5` on invalid config per `ExitCodes`).
+Validate your setup: `aimo doctor` or `aimo doctor --json` (invalid config exits `5`; see [`src/core/contracts/ExitCodes.constants.ts`](./src/core/contracts/ExitCodes.constants.ts)).
 
 ## Docs for contributors
 
@@ -91,7 +87,7 @@ See [`USAGE.md`](./USAGE.md) for the full per-command reference, exit codes, and
 - [`docs/ai/`](./docs/ai/) — roadmap, architecture, contribution contract, conventions, security model, catalog
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — short contribution guide
 
-API reference (early scaffold): run `bun run docs` → HTML in `dist/docs/` (ignored by git).
+API reference: run `bun run docs` → HTML in `dist/docs/` (gitignored).
 
 ## License
 
