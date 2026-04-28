@@ -9,6 +9,7 @@ import { getPipelinePlaceholderExitCode } from '@features/runPipeline.feature';
 import { PACKAGE_VERSION } from '@shared/constants/Version.constants';
 import { Command } from 'commander';
 
+import { registerDoctorCommand } from './commands/doctor.command';
 import {
   assertAimoConfigWiring,
   createCleanupRegistry,
@@ -46,6 +47,8 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
     .action(() => {
       program.outputHelp();
     });
+
+  registerDoctorCommand(program);
 
   const [, , ...rest] = argv;
   if (rest.length === 0) {

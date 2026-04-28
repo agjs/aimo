@@ -7,6 +7,7 @@
 | Module | Responsibility |
 | ------ | ---------------- |
 | `cli.ts` | CLI entry (`commander`); calls `assertCompositionWired()` so `wireDefaults` + `features` stay in the dependency graph until real commands land. |
+| `commands/doctor.command.ts` | `aimo doctor` / `doctor --json` — runs `loadResolvedAimoConfig`, exit `EXIT_CONFIG_ERROR` on invalid YAML. |
 | `wireDefaults.ts` | Composition root — clock, schema version, cleanup, env + YAML config loaders (`loadResolvedAimoConfig`). |
 
 ## `src/core/`
@@ -41,8 +42,9 @@
 
 | Area | Responsibility |
 | ---- | ---------------- |
-| `_helpers/spawnCli.ts` | Subprocess CLI runner for e2e. |
+| `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests. |
+| `e2e/` | Black-box CLI tests (`doctor`, `--version`, failure paths). |
+| `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, …). |
 | `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, wiring smoke). |

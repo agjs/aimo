@@ -64,6 +64,7 @@ The [`release-please.yml`](./.github/workflows/release-please.yml) job needs a `
 
 - [ ] `bun run check` passes locally
 - [ ] Tests added or updated for changed behavior (TDD: failing test first when feasible)
+- [ ] **CLI / config changes:** add or extend **`tests/e2e/`** subprocess tests; use an isolated `HOME` (see `e2e/_helpers/isolatedHomeProject.ts`) so CI does not depend on a developer’s real `~/.config`.
 - [ ] ADR or plan update if you intentionally bend an architectural rule
 - [ ] Commit message follows Conventional Commits
 
