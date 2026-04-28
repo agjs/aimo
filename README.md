@@ -2,7 +2,7 @@
 
 Bun + TypeScript CLI for **plan → execute → review** workflows with **different models per stage**, plus a future **lab bench** for comparing profiles.
 
-> **Status:** Phase 0 tooling and scaffold. Milestone A (core vertical slice) is tracked in the project plan.
+> **Status:** Phase 0 tooling and scaffold. **Backlog and order of work:** [`docs/ai/roadmap.md`](./docs/ai/roadmap.md).
 
 ## Requirements
 
@@ -20,7 +20,7 @@ bun src/app/cli.ts --help
 
 - [`AGENTS.md`](./AGENTS.md) — architecture, boundaries, JSDoc, anti-patterns, workflows
 - [`CLAUDE.md`](./CLAUDE.md) — quick pointer + same rules for Claude Code sessions
-- [`docs/ai/`](./docs/ai/) — architecture diagram, contribution contract, conventions, security model, catalog
+- [`docs/ai/`](./docs/ai/) — roadmap, architecture, contribution contract, conventions, security model, catalog
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — short contribution guide
 
 API reference (early scaffold): run `bun run docs` → HTML in `dist/docs/` (ignored by git).

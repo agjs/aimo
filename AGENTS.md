@@ -9,7 +9,7 @@
 
 **Why Bun + strict TS:** fast cold start, native `bun test` / `Bun.spawn`, single toolchain. Strictness (`noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `exactOptionalPropertyTypes`, no `any`) catches integration bugs early.
 
-**Milestones:** **A** = smallest vertical slice (init, fake provider, plan, delegated execute, review, `run` / `--dry-run`, doctor). **B** = compare / models / cost / clean. **C** = builtin executor hardening + coverage sweep.
+**Milestones:** **A** = smallest vertical slice (init, fake provider, plan, delegated execute, review, `run` / `--dry-run`, doctor). **B** = compare / models / cost / clean. **C** = builtin executor hardening + coverage sweep. **Ordered backlog + status:** [docs/ai/roadmap.md](./docs/ai/roadmap.md) — prefer that over ad-hoc chat todos.
 
 ---
 

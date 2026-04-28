@@ -49,12 +49,15 @@ flowchart LR
 
 ## Milestones (delivery order)
 
+Summary only — **checklist and status:** [roadmap.md](./roadmap.md).
+
 - **Milestone A** — Vertical slice: `init`, fake provider, `plan`, delegated `execute`, `review`, `run --dry-run`, `run`, `doctor`, step commands; all against **fake** provider in CI.
 - **Milestone B** — Lab bench: `compare`, `replay`, `models`, `clean`, `inspect-cost`, aux commands.
 - **Milestone C** — Minimal **builtin** executor (read/write only) + coverage sweep.
 
 ## Further reading
 
+- [roadmap.md](./roadmap.md) — ordered backlog (what to build next)
 - [contribution-contract.md](./contribution-contract.md) — non‑negotiables
 - [conventions.md](./conventions.md) — naming and file suffixes
 - [security-model.md](./security-model.md) — trust boundaries and secrets

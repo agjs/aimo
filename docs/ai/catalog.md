@@ -1,6 +1,6 @@
 # Code catalog
 
-> **Auto-curated goal:** keep a single index of modules as the tree grows. Until a generator lands, update this file when you add a **new** top-level area under `src/`.
+> **Auto-curated goal:** keep a single index of modules as the tree grows. Until a generator lands, update this file when you add a **new** top-level area under `src/`. **What to build next:** [roadmap.md](./roadmap.md).
 
 ## `src/app/`
 

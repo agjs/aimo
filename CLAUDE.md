@@ -6,6 +6,7 @@ Read **[`AGENTS.md`](./AGENTS.md)** end-to-end before writing code. It is the so
 
 Supporting docs:
 
+- [`docs/ai/roadmap.md`](./docs/ai/roadmap.md) — ordered backlog + status (what to build next)
 - [`docs/ai/architecture.md`](./docs/ai/architecture.md) — layer diagram + milestones
 - [`docs/ai/contribution-contract.md`](./docs/ai/contribution-contract.md) — ten non‑negotiables
 - [`docs/ai/conventions.md`](./docs/ai/conventions.md) — suffix vocabulary + import style
@@ -14,7 +15,7 @@ Supporting docs:
 
 ## Quick workflow
 
-1. Understand the milestone (A → B → C); stay inside scope.
+1. Read **`docs/ai/roadmap.md`** for the current milestone item; stay inside scope.
 2. Add or update **tests** first when behavior is specified.
 3. Implement in **`core` (pure)** → **`features` (orchestrate)** → **`app` (wire)** → **`runtime` / `providers` (adapters)**.
 4. Run **`bun run check`**.
