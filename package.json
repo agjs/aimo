@@ -22,6 +22,7 @@
     "format:check": "prettier --check .",
     "test": "bun test",
     "depcruise": "depcruise src",
+    "docs": "typedoc",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun run depcruise && bun test",
     "prepare": "husky"
   },
@@ -44,6 +45,7 @@
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
     "prettier": "3.8.3",
+    "typedoc": "0.28.14",
     "typescript": "6.0.3",
     "typescript-eslint": "8.59.0"
   }

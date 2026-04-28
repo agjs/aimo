@@ -1,0 +1,25 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "blockTags": ["@file", "@layer", "@description", "@param", "@returns"],
+  "entryPoints": [
+    "./src/core/contracts/ExitCodes.constants.ts",
+    "./src/core/contracts/SchemaVersion.constants.ts",
+    "./src/core/lifecycle/CleanupRegistry.behavior.ts",
+    "./src/core/ports/IClockPort.types.ts",
+    "./src/runtime/bun/ClockPort.bun.ts",
+    "./src/app/wireDefaults.ts",
+    "./src/app/cli.ts",
+    "./src/features/runPipeline.feature.ts"
+  ],
+  "tsconfig": "./tsconfig.json",
+  "out": "dist/docs",
+  "readme": "./README.md",
+  "name": "aimo",
+  "categorizeByGroup": true,
+  "sort": ["kind", "alphabetical"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": false
+  },
+  "treatWarningsAsErrors": false
+}
