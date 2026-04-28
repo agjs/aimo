@@ -24,11 +24,13 @@ export function registerPingCommand(program: Command): void {
         messages: [{ role: 'user', content: 'ping' }],
       });
       const text = reply.choices[0]?.message.content ?? '';
+
       if (options.json) {
         process.stdout.write(`${JSON.stringify({ ok: true, reply: text, id: reply.id })}\n`);
       } else {
         process.stdout.write(`${text}\n`);
       }
+
       process.exit(EXIT_SUCCESS);
     });
 }

@@ -21,9 +21,11 @@ export function ensureVerdictForPersistedReview(
   | { ok: true; readonly markdownOut: string; readonly verdict: TReviewVerdict }
   | { ok: false; readonly message: string } {
   const parsed = parseReviewVerdictFromMarkdown(markdown);
+
   if (parsed.ok) {
     return { ok: true, markdownOut: markdown, verdict: parsed.verdict };
   }
+
   if (provider === 'fake') {
     const suffix = '\n\nVERDICT: pass\n';
     return {
@@ -32,5 +34,6 @@ export function ensureVerdictForPersistedReview(
       verdict: 'pass',
     };
   }
+
   return { ok: false, message: parsed.message };
 }

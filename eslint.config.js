@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import stylistic from '@stylistic/eslint-plugin';
 import boundariesPlugin from 'eslint-plugin-boundaries';
 import importPlugin from 'eslint-plugin-import-x';
 import jsdoc from 'eslint-plugin-jsdoc';
@@ -69,6 +70,7 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
     plugins: {
+      '@stylistic': stylistic,
       boundaries: boundariesPlugin,
       import: importPlugin,
     },
@@ -119,6 +121,13 @@ export default tseslint.config(
 
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
+      // Vertical rhythm: blank after a block-like stmt (`if` / `for` / …) before whatever follows,
+      // and blank before a block-like stmt that follows `const` / `let` / `var`.
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: 'block-like', next: '*' },
+        { blankLine: 'always', prev: ['const', 'let', 'var'], next: 'block-like' },
+      ],
       'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }],
       complexity: ['warn', 15],
 

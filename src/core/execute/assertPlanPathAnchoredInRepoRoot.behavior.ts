@@ -22,14 +22,17 @@ export function assertPlanPathAnchoredInRepoRoot(params: {
   const repoRootResolved = resolve(params.repoRoot);
   const planPathResolved = resolve(params.planPath);
   const rel = relative(repoRootResolved, planPathResolved);
+
   if (rel === '') {
     return {
       ok: false,
       message: 'plan path resolves to repository root (expected a file under it)',
     };
   }
+
   if (rel.startsWith('..')) {
     return { ok: false, message: 'plan file resolves outside repository root' };
   }
+
   return { ok: true, repoRootResolved, planPathResolved };
 }

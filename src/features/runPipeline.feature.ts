@@ -1,7 +1,7 @@
 /**
  * @file runPipeline.feature.ts
  * @layer features
- * @description Chat-stage building blocks for plan/review; full `aimo run` orchestration lives in `app/orchestrateRunPipeline.app.ts`.
+ * @description Chat-stage building blocks for plan/review; full `aimo run` orchestration lives in `app/runPipeline/`.
  */
 
 import { EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';

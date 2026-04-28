@@ -70,18 +70,23 @@ async function tryReadYamlObject(
   try {
     const file = Bun.file(absolutePath);
     const exists = await file.exists();
+
     if (!exists) {
       return { ok: true, existed: false, data: {} };
     }
+
     const text = await file.text();
     let parsed: unknown;
+
     try {
       parsed = parseYaml(text);
     } catch (error: unknown) {
       const detail = error instanceof Error ? error.message : String(error);
       return { ok: false, existed: true, message: `invalid YAML (${detail})` };
     }
+
     const root = normalizeYamlMapping(parsed);
+
     if (root === null) {
       return {
         ok: false,
@@ -89,6 +94,7 @@ async function tryReadYamlObject(
         message: 'config root must be a YAML mapping (object), not a list or scalar',
       };
     }
+
     return { ok: true, existed: true, data: root };
   } catch (error: unknown) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -105,9 +111,11 @@ function normalizeYamlMapping(value: unknown): Record<string, unknown> | null {
   if (value === null || value === undefined) {
     return {};
   }
+
   if (typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
+
   return null;
 }
 

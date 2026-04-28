@@ -73,6 +73,7 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
   registerRunCommand(program);
 
   const [, , ...rest] = argv;
+
   if (rest.length === 0) {
     program.outputHelp();
     return;

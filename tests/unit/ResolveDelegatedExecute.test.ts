@@ -17,6 +17,7 @@ describe('resolveDelegatedExecuteForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolveDelegatedExecuteForProfile(cfg.data, 'default');
     expect(r.ok).toBe(false);
   });
@@ -31,11 +32,13 @@ describe('resolveDelegatedExecuteForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolveDelegatedExecuteForProfile(cfg.data, 'default');
     expect(r.ok).toBe(false);
     if (r.ok) {
       return;
     }
+
     expect(r.message).toContain('delegated');
   });
 
@@ -57,11 +60,13 @@ describe('resolveDelegatedExecuteForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolveDelegatedExecuteForProfile(cfg.data, 'default');
     expect(r.ok).toBe(true);
     if (!r.ok) {
       return;
     }
+
     expect(r.execute.command).toEqual(['wc', '-c']);
     expect(r.execute.pipePlanToStdin).toBe(true);
   });

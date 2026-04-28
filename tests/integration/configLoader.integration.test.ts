@@ -46,6 +46,7 @@ profiles:
     if (!result.ok) {
       return;
     }
+
     expect(result.config.profiles.default?.plan?.provider).toBe('project');
     expect(result.config.profiles.default?.plan?.model).toBe('new');
     expect(result.paths.userYamlPresent).toBe(true);

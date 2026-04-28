@@ -29,6 +29,7 @@ function buildDoctorJsonPayload(result: TLoadAimoConfigResult): Record<string, u
       paths: result.paths,
     };
   }
+
   return {
     ok: false,
     messages: [...result.messages],
@@ -58,6 +59,7 @@ export function registerDoctorCommand(program: Command): void {
         for (const line of result.messages) {
           process.stderr.write(`${line}\n`);
         }
+
         process.stderr.write(`user: ${result.paths.userYamlPath}\n`);
         process.stderr.write(`project: ${result.paths.projectYamlPath}\n`);
         process.exit(EXIT_CONFIG_ERROR);

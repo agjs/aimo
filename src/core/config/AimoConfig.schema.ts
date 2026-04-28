@@ -54,6 +54,7 @@ export const aimoConfigSchema = z
   })
   .superRefine((data, ctx) => {
     const names = Object.keys(data.profiles);
+
     if (names.length > 0 && !Object.hasOwn(data.profiles, data.default_profile)) {
       ctx.addIssue({
         code: 'custom',
@@ -75,9 +76,11 @@ export function safeParseAimoConfig(
   raw: unknown,
 ): { ok: true; data: TAimoConfig } | { ok: false; messages: readonly string[] } {
   const result = aimoConfigSchema.safeParse(raw);
+
   if (result.success) {
     return { ok: true, data: result.data };
   }
+
   const messages = result.error.issues.map((issue) => {
     const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
     return `${path}${issue.message}`;

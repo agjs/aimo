@@ -13,6 +13,7 @@ import { describe, expect, it } from 'bun:test';
 describe('loadResolvedEnv', () => {
   it('reads a unique key from a project .env under cwd', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'aimo-env-'));
+
     try {
       const key = `AIMO_ITEST_${process.pid}_${Date.now()}`;
       await writeFile(join(dir, '.env'), `${key}=from_project\n`, 'utf8');

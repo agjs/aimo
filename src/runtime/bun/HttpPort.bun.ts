@@ -32,9 +32,11 @@ export class BunHttpPort implements IHttpPort {
       body: JSON.stringify(jsonBody),
     });
     const text = await response.text();
+
     if (text.length === 0) {
       return { status: response.status, json: null };
     }
+
     try {
       return { status: response.status, json: JSON.parse(text) as unknown };
     } catch {

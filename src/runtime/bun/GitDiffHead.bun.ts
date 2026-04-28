@@ -20,9 +20,11 @@ export async function readGitDiffHeadText(
   const stderr = await new Response(proc.stderr).text();
   const stdout = await new Response(proc.stdout).text();
   const exitCode = await proc.exited;
+
   if (exitCode !== 0) {
     const detail = stderr.trim() || `git diff HEAD exited with code ${String(exitCode)}`;
     return { ok: false, reason: detail };
   }
+
   return { ok: true, text: stdout };
 }

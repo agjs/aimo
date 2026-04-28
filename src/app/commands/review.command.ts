@@ -28,6 +28,7 @@ function selectReviewChatPort(provider: string): IChatCompletionPort | null {
   if (provider === 'fake') {
     return createInProcessFakeChatPort();
   }
+
   return null;
 }
 
@@ -45,39 +46,50 @@ async function runReviewOnce(options: {
 }): Promise<void> {
   const cwd = process.cwd();
   const runId = options.run.trim();
+
   if (!isSafeRunDirectoryName(runId)) {
     process.stderr.write('review: invalid --run id (use a UUID with no path separators)\n');
     process.exit(EXIT_OPERATIONAL_ERROR);
   }
+
   const loaded = await loadResolvedAimoConfig(cwd);
+
   if (!loaded.ok) {
     for (const m of loaded.messages) {
       process.stderr.write(`${m}\n`);
     }
+
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const cfg = loaded.config;
   const profileName = options.profile ?? cfg.default_profile;
   const resolved = resolveReviewStageForProfile(cfg, profileName);
+
   if (!resolved.ok) {
     process.stderr.write(`${resolved.message}\n`);
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const { provider, model } = resolved.review;
   const chat = selectReviewChatPort(provider);
+
   if (!chat) {
     process.stderr.write(
       `review stage: provider "${provider}" is not supported yet (use provider: fake for now)\n`,
     );
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const paths = await prepareRunArtifactPaths(cwd, runId);
   const planPath = paths.planPath;
   const planFile = Bun.file(planPath);
+
   if (!(await planFile.exists())) {
     process.stderr.write(`review: plan file missing at ${planPath} (run \`aimo plan\` first)\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
   }
+
   const planMarkdown = await planFile.text();
   const diffPath = join(paths.runDir, GIT_DIFF_AFTER_BASENAME);
   const diffFile = Bun.file(diffPath);
@@ -90,10 +102,12 @@ async function runReviewOnce(options: {
     transcriptMarkdown: '',
   });
   const ensured = ensureVerdictForPersistedReview(markdown, provider);
+
   if (!ensured.ok) {
     process.stderr.write(`${ensured.message}\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
   }
+
   const exitCode = exitCodeForReviewVerdict(ensured.verdict);
   await writeReviewMarkdown(paths.runDir, ensured.markdownOut);
   if (options.json) {
@@ -112,6 +126,7 @@ async function runReviewOnce(options: {
       process.stdout.write('\n');
     }
   }
+
   process.exit(exitCode);
 }
 

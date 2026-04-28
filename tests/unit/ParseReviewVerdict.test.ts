@@ -12,6 +12,7 @@ describe('parseReviewVerdictFromMarkdown', () => {
     if (!r.ok) {
       return;
     }
+
     expect(r.verdict).toBe('changes_requested');
   });
 

@@ -37,9 +37,11 @@ async function writeStarterFile(
 ): Promise<TInitWriteResult | { readonly error: string }> {
   try {
     const exists = await Bun.file(path).exists();
+
     if (exists && !force) {
       return { path, status: 'skipped_exists' };
     }
+
     const status: TInitFileStatus = exists && force ? 'overwritten' : 'created';
     await Bun.write(path, contents);
     return { path, status };
@@ -72,12 +74,15 @@ function packInitWriteOutcome(
     user?: TInitWriteResult;
     project?: TInitWriteResult;
   } = { errors };
+
   if (opts?.user !== undefined) {
     out.user = opts.user;
   }
+
   if (opts?.project !== undefined) {
     out.project = opts.project;
   }
+
   return out;
 }
 
@@ -114,24 +119,29 @@ export async function runInitWrites(input: {
       errors.push(`${getUserGlobalConfigDir()}: ${detail}`);
       return packInitWriteOutcome(errors);
     }
+
     const userPath = getUserGlobalConfigYamlPath();
     const res = await writeStarterFile(userPath, input.globalYaml, input.force);
+
     if ('error' in res) {
       errors.push(res.error);
       return packInitWriteOutcome(errors);
     }
+
     user = res;
   }
 
   if (input.mode === 'both' || input.mode === 'local') {
     const projectPath = getProjectAimoYamlPath(input.cwd);
     const res = await writeStarterFile(projectPath, input.localYaml, input.force);
+
     if ('error' in res) {
       errors.push(res.error);
       return user !== undefined
         ? packInitWriteOutcome(errors, { user })
         : packInitWriteOutcome(errors);
     }
+
     project = res;
   }
 

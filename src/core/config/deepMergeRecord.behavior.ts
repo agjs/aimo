@@ -43,12 +43,14 @@ function deepMergeWithOverlay(
 
   for (const [key, overlayValue] of Object.entries(overlay)) {
     const baseValue = base[key];
+
     if (isPlainObject(baseValue) && isPlainObject(overlayValue)) {
       out[key] = deepMergeWithOverlay(baseValue, overlayValue);
     } else {
       out[key] = overlayValue;
     }
   }
+
   return out;
 }
 

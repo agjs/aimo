@@ -70,6 +70,7 @@ export function registerInitCommand(program: Command): void {
       }) => {
         if (options.globalOnly && options.localOnly) {
           const msg = 'choose at most one of --global-only and --local-only\n';
+
           if (options.json) {
             process.stdout.write(
               `${JSON.stringify({ ok: false, error: 'mutually_exclusive_flags' })}\n`,
@@ -77,6 +78,7 @@ export function registerInitCommand(program: Command): void {
           } else {
             process.stderr.write(msg);
           }
+
           process.exit(EXIT_CONFIG_ERROR);
         }
 
@@ -99,9 +101,11 @@ export function registerInitCommand(program: Command): void {
           for (const line of errors) {
             process.stderr.write(`${line}\n`);
           }
+
           if (options.json) {
             process.stdout.write(`${JSON.stringify({ ok: false, errors })}\n`);
           }
+
           process.exit(EXIT_OPERATIONAL_ERROR);
         }
 
@@ -115,9 +119,11 @@ export function registerInitCommand(program: Command): void {
         if (user) {
           printHumanLine('user config', user);
         }
+
         if (project) {
           printHumanLine('project config', project);
         }
+
         process.exit(EXIT_SUCCESS);
       },
     );

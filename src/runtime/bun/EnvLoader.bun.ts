@@ -29,9 +29,11 @@ export function getUserGlobalDotEnvPath(): string {
 export async function tryReadDotEnvFile(absolutePath: string): Promise<Record<string, string>> {
   try {
     const file = Bun.file(absolutePath);
+
     if (!(await file.exists())) {
       return {};
     }
+
     const text = await file.text();
     return parseDotEnvContents(text);
   } catch {

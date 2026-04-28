@@ -12,8 +12,10 @@ export function isSafeRunDirectoryName(runId: string): boolean {
   if (runId.length === 0 || runId.length > 256) {
     return false;
   }
+
   if (runId.includes('/') || runId.includes('\\') || runId.includes('..')) {
     return false;
   }
+
   return true;
 }

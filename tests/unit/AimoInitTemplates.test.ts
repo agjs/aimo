@@ -14,6 +14,7 @@ describe('Aimo init templates', () => {
     if (!r.ok) {
       return;
     }
+
     expect(r.data.profiles.default?.plan?.provider).toBe('fake');
     expect(r.data.profiles.default?.execute?.type).toBe('builtin');
   });

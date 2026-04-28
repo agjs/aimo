@@ -28,6 +28,7 @@ export class CleanupRegistry {
   public async drain(): Promise<void> {
     while (this.stack.length > 0) {
       const fn = this.stack.pop();
+
       if (fn) {
         await fn();
       }

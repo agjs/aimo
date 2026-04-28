@@ -17,6 +17,7 @@ describe('resolveReviewStageForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolveReviewStageForProfile(cfg.data, 'default');
     expect(r.ok).toBe(false);
   });
@@ -31,11 +32,13 @@ describe('resolveReviewStageForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolveReviewStageForProfile(cfg.data, 'default');
     expect(r.ok).toBe(true);
     if (!r.ok) {
       return;
     }
+
     expect(r.review.provider).toBe('fake');
     expect(r.review.model).toBe('stub');
   });

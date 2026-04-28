@@ -14,7 +14,24 @@
 | `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
 | `commands/review.command.ts` | `aimo review --run <id>` — reviewer chat, `review.md`, process exit from `VERDICT` (`0` / `2` / `3`). |
 | `commands/run.command.ts` | `aimo run` / `--dry-run` / `--json` — thin wrapper around `runAimoRunPipeline`. |
-| `orchestrateRunPipeline.app.ts` | Plan → delegated execute → review in one process; exit codes per `ExitCodes`. |
+| `orchestrateRunPipeline.app.ts` | Re-exports `runPipeline/` (stable import path for `aimo run`). |
+| `runPipeline/runPipelineOrchestrator.app.ts` | Sequences plan / execute / review slices; exit codes per `ExitCodes`. |
+| `runPipeline/runPipelineTypes.app.ts` | `TRunPipelineOptions` (+ re-exports `TPipelineStageName`). |
+| `runPipeline/dryRunValidateBindings.app.ts` | Pure slice + binding validators (`validateBindingsForSlice`, etc.). |
+| `runPipeline/runPipelinePreflightWrite.app.ts` | Non–dry-run preflight: slice, run id, YAML bindings, artifact paths. |
+| `runPipeline/runPipelineRunWritePhases.app.ts` | Plan / execute / review write phases after preflight. |
+| `runPipeline/runPipelineBuildSuccessJsonSummary.app.ts` | Builds `aimo run --json` success payload (no I/O). |
+| `runPipeline/runPipelineEmitExecuteFailure.app.ts` | JSON/human output for execute `spawn_fail`. |
+| `runPipeline/runPipelineEmitHumanWriteComplete.app.ts` | Human stdout when slice ends (plan-only, execute-only, review). |
+| `runPipeline/runPipelineDryRun.app.ts` | `--dry-run` validation for `aimo run`. |
+| `runPipeline/runPipelineLoadStages.app.ts` | Load merged config + resolve plan/execute/review bindings. |
+| `runPipeline/runPipelineChats.app.ts` | Select `IChatCompletionPort` from YAML provider ids. |
+| `runPipeline/resolveRunIdForPipelineSlice.app.ts` | Resolve or validate `.aimo/runs/<id>/` for a slice. |
+| `runPipeline/runPipelineWritePlanStep.app.ts` | Planner chat + `plan.md` / manifest write. |
+| `runPipeline/runPipelineWriteExecuteStep.app.ts` | Delegated spawn + diff / execute result artifacts. |
+| `runPipeline/runPipelineWriteReviewStep.app.ts` | Reviewer chat + `review.md`. |
+| `runPipeline/formatGitDiffHeadError.app.ts` | Merge optional `git diff HEAD` capture errors. |
+| `runPipeline/formatStageSliceForHumans.app.ts` | Human-readable `plan → execute` slice label. |
 | `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, stage `assert*` wiring including `assertRunPipelineWired`. |
 
 ## `src/core/`
@@ -40,6 +57,7 @@
 | `review/ParseReviewVerdict.behavior.ts` | Parse final `VERDICT:` line from reviewer markdown. |
 | `review/ensureVerdictForPersistedReview.behavior.ts` | Append `VERDICT: pass` for `fake` provider when missing; else require parseable verdict. |
 | `review/ResolveReviewStage.behavior.ts` | Resolve `profiles.*.review` routing from merged config. |
+| `run/resolvePipelineStageRange.behavior.ts` | Parse `--from` / `--to` stage names; inclusive ordered slice (`plan` → `review`). |
 | `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers (`plan.md`, `review.md`, diff files, …). |
 | `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
 | `runs/RunManifestJson.behavior.ts` | Serialize plan manifest to pretty JSON. |

@@ -26,12 +26,14 @@ export function resolvePlanStageForProfile(
   profileName: string,
 ): { ok: true; plan: TResolvedPlanStage } | { ok: false; message: string } {
   const profile = config.profiles[profileName];
+
   if (!profile?.plan) {
     return {
       ok: false,
       message: `profile "${profileName}" has no plan stage (add profiles.${profileName}.plan in YAML)`,
     };
   }
+
   const plan: TResolvedPlanStage = {
     provider: profile.plan.provider,
     model: profile.plan.model,

@@ -8,6 +8,7 @@ describe('safeParseAimoConfig', () => {
     if (!r.ok) {
       return;
     }
+
     expect(r.data.schema_version).toBe(1);
     expect(r.data.default_profile).toBe('default');
     expect(r.data.profiles).toEqual({});
@@ -52,6 +53,7 @@ describe('safeParseAimoConfig', () => {
     if (r.ok) {
       return;
     }
+
     expect(r.messages.join('\n')).toContain('default_profile');
   });
 

@@ -18,6 +18,7 @@ describe('assertPlanPathAnchoredInRepoRoot', () => {
     if (!r.ok) {
       return;
     }
+
     expect(r.planPathResolved).toContain('plan.md');
   });
 

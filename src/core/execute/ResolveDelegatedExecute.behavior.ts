@@ -27,18 +27,21 @@ export function resolveDelegatedExecuteForProfile(
 ): { ok: true; execute: TResolvedDelegatedExecute } | { ok: false; message: string } {
   const profile = config.profiles[profileName];
   const ex = profile?.execute;
+
   if (!ex) {
     return {
       ok: false,
       message: `profile "${profileName}" has no execute stage (add profiles.${profileName}.execute in YAML)`,
     };
   }
+
   if (ex.type !== 'delegated') {
     return {
       ok: false,
       message: `execute stage is type "${ex.type}" — aimo execute only supports delegated in Milestone A6`,
     };
   }
+
   const pipePlanToStdin = ex.stdin_file === PLAN_PATH_TEMPLATE_TOKEN;
   return {
     ok: true,

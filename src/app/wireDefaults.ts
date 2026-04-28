@@ -26,6 +26,7 @@ import { ensureVerdictForPersistedReview } from '@core/review/ensureVerdictForPe
 import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
 import { parseReviewVerdictFromMarkdown } from '@core/review/ParseReviewVerdict.behavior';
 import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
+import { resolvePipelineStageRange } from '@core/run/resolvePipelineStageRange.behavior';
 import { relativePlanMdPath, relativeReviewMdPath } from '@core/runs/AimoRunPaths.constants';
 import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
@@ -118,9 +119,11 @@ export function assertExecuteStageWired(): void {
       default: { execute: { type: 'delegated', command: ['true'] } },
     },
   });
+
   if (execCfg.ok) {
     void resolveDelegatedExecuteForProfile(execCfg.data, 'default');
   }
+
   void serializeExecuteResultJson({
     schema_version: CURRENT_SCHEMA_VERSION,
     run_id: 'wire',
@@ -167,9 +170,11 @@ export function assertReviewStageWired(): void {
       default: { review: { provider: 'fake', model: 'stub' } },
     },
   });
+
   if (revCfg.ok) {
     void resolveReviewStageForProfile(revCfg.data, 'default');
   }
+
   void runReviewChat;
   void writeReviewMarkdown;
 }
@@ -179,6 +184,7 @@ export function assertReviewStageWired(): void {
  */
 export function assertRunPipelineWired(): void {
   void ensureVerdictForPersistedReview('wire\n\nVERDICT: pass\n', 'openai');
+  void resolvePipelineStageRange('plan', 'review');
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

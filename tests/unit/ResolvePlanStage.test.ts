@@ -17,11 +17,13 @@ describe('resolvePlanStageForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolvePlanStageForProfile(cfg.data, 'default');
     expect(r.ok).toBe(false);
     if (r.ok) {
       return;
     }
+
     expect(r.message).toContain('no plan stage');
   });
 
@@ -39,11 +41,13 @@ describe('resolvePlanStageForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolvePlanStageForProfile(cfg.data, 'default');
     expect(r.ok).toBe(true);
     if (!r.ok) {
       return;
     }
+
     expect(r.plan.provider).toBe('fake');
     expect(r.plan.model).toBe('stub');
     expect(r.plan.base_url).toBeUndefined();
@@ -63,11 +67,13 @@ describe('resolvePlanStageForProfile', () => {
     if (!cfg.ok) {
       return;
     }
+
     const r = resolvePlanStageForProfile(cfg.data, 'default');
     expect(r.ok).toBe(true);
     if (!r.ok) {
       return;
     }
+
     expect(r.plan.base_url).toBe('https://example.com/v1');
   });
 });

@@ -30,6 +30,7 @@ function selectPlanChatPort(provider: string): IChatCompletionPort | null {
   if (provider === 'fake') {
     return createInProcessFakeChatPort();
   }
+
   return null;
 }
 
@@ -52,32 +53,41 @@ export function registerPlanCommand(program: Command): void {
       ): Promise<void> => {
         const cwd = process.cwd();
         const loaded = await loadResolvedAimoConfig(cwd);
+
         if (!loaded.ok) {
           for (const m of loaded.messages) {
             process.stderr.write(`${m}\n`);
           }
+
           process.exit(EXIT_CONFIG_ERROR);
         }
+
         const cfg = loaded.config;
         const profileName = options.profile ?? cfg.default_profile;
         const resolved = resolvePlanStageForProfile(cfg, profileName);
+
         if (!resolved.ok) {
           process.stderr.write(`${resolved.message}\n`);
           process.exit(EXIT_CONFIG_ERROR);
         }
+
         const { provider, model } = resolved.plan;
         const chat = selectPlanChatPort(provider);
+
         if (!chat) {
           process.stderr.write(
             `plan stage: provider "${provider}" is not supported yet (use provider: fake for now)\n`,
           );
           process.exit(EXIT_CONFIG_ERROR);
         }
+
         const task = (options.task ?? taskArg).trim();
+
         if (task.length === 0) {
           process.stderr.write('plan: task text is empty\n');
           process.exit(EXIT_CONFIG_ERROR);
         }
+
         const runId = randomUUID();
         const paths = await prepareRunArtifactPaths(cwd, runId);
         const { markdown } = await runPlanChat({ task, model, chat });
@@ -108,6 +118,7 @@ export function registerPlanCommand(program: Command): void {
         } else {
           process.stdout.write(`${markdown}\n`);
         }
+
         process.exit(EXIT_SUCCESS);
       },
     );

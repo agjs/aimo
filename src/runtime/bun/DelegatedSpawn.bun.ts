@@ -29,6 +29,7 @@ export async function runDelegatedArgv(params: {
   if (params.argv.length === 0) {
     return { exitCode: 1, stdout: '', stderr: 'delegated argv is empty' };
   }
+
   const proc = Bun.spawn([...params.argv], {
     cwd: params.cwd,
     stdout: 'pipe',

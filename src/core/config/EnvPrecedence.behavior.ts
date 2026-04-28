@@ -16,15 +16,18 @@ export function mergeEnvLayers(
   layers: ReadonlyArray<Readonly<Record<string, string | undefined>>>,
 ): Record<string, string> {
   const out: Record<string, string> = {};
+
   for (const layer of layers) {
     for (const [key, value] of Object.entries(layer)) {
       if (value === undefined || value === '') {
         continue;
       }
+
       if (!(key in out)) {
         out[key] = value;
       }
     }
   }
+
   return out;
 }

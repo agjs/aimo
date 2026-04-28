@@ -42,15 +42,19 @@ function formatGitDiffHeadError(before: TGitDiffCapture, after: TGitDiffCapture)
   if (before.ok && after.ok) {
     return null;
   }
+
   if (before.ok === false && after.ok === false) {
     return `before: ${before.reason}; after: ${after.reason}`;
   }
+
   if (before.ok === false) {
     return `before: ${before.reason}`;
   }
+
   if (after.ok === false) {
     return `after: ${after.reason}`;
   }
+
   return null;
 }
 
@@ -69,37 +73,48 @@ async function runExecuteDelegatedOnce(options: {
 }): Promise<void> {
   const cwd = process.cwd();
   const runId = options.run.trim();
+
   if (!isSafeRunDirectoryName(runId)) {
     process.stderr.write('execute: invalid --run id (use a UUID with no path separators)\n');
     process.exit(EXIT_OPERATIONAL_ERROR);
   }
+
   const loaded = await loadResolvedAimoConfig(cwd);
+
   if (!loaded.ok) {
     for (const m of loaded.messages) {
       process.stderr.write(`${m}\n`);
     }
+
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const cfg = loaded.config;
   const profileName = options.profile ?? cfg.default_profile;
   const resolvedExec = resolveDelegatedExecuteForProfile(cfg, profileName);
+
   if (!resolvedExec.ok) {
     process.stderr.write(`${resolvedExec.message}\n`);
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const paths = await prepareRunArtifactPaths(cwd, runId);
   const planPath = join(paths.runDir, PLAN_MD_FILENAME);
   const planFile = Bun.file(planPath);
   const planExists = await planFile.exists();
+
   if (!planExists) {
     process.stderr.write(`execute: plan file missing at ${planPath} (run \`aimo plan\` first)\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
   }
+
   const anchored = assertPlanPathAnchoredInRepoRoot({ repoRoot: cwd, planPath });
+
   if (!anchored.ok) {
     process.stderr.write(`${anchored.message}\n`);
     process.exit(EXIT_CONFIG_ERROR);
   }
+
   const argvResolved = substitutePlanPathInArgv(
     resolvedExec.execute.command,
     anchored.planPathResolved,
@@ -144,10 +159,12 @@ async function runExecuteDelegatedOnce(options: {
     if (spawned.stderr.length > 0) {
       process.stderr.write(spawned.stderr);
     }
+
     if (spawned.stdout.length > 0) {
       process.stdout.write(spawned.stdout);
     }
   }
+
   process.exit(spawned.exitCode === 0 ? EXIT_SUCCESS : spawned.exitCode);
 }
 /* eslint-enable complexity */
