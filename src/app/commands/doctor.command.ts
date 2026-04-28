@@ -51,7 +51,6 @@ export function registerDoctorCommand(program: Command): void {
       if (options.json) {
         process.stdout.write(`${JSON.stringify(buildDoctorJsonPayload(result))}\n`);
         process.exit(result.ok ? EXIT_SUCCESS : EXIT_CONFIG_ERROR);
-        return;
       }
 
       if (!result.ok) {
@@ -62,7 +61,6 @@ export function registerDoctorCommand(program: Command): void {
         process.stderr.write(`user: ${result.paths.userYamlPath}\n`);
         process.stderr.write(`project: ${result.paths.projectYamlPath}\n`);
         process.exit(EXIT_CONFIG_ERROR);
-        return;
       }
 
       process.stdout.write('Configuration valid.\n');

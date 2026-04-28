@@ -78,7 +78,6 @@ export function registerInitCommand(program: Command): void {
             process.stderr.write(msg);
           }
           process.exit(EXIT_CONFIG_ERROR);
-          return;
         }
 
         const mode: TInitMode = options.localOnly
@@ -104,7 +103,6 @@ export function registerInitCommand(program: Command): void {
             process.stdout.write(`${JSON.stringify({ ok: false, errors })}\n`);
           }
           process.exit(EXIT_OPERATIONAL_ERROR);
-          return;
         }
 
         if (options.json) {
@@ -112,7 +110,6 @@ export function registerInitCommand(program: Command): void {
             `${JSON.stringify({ ok: true, ...buildInitJsonPayload(user, project) })}\n`,
           );
           process.exit(EXIT_SUCCESS);
-          return;
         }
 
         if (user) {

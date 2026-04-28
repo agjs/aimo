@@ -57,7 +57,6 @@ export function registerPlanCommand(program: Command): void {
             process.stderr.write(`${m}\n`);
           }
           process.exit(EXIT_CONFIG_ERROR);
-          return;
         }
         const cfg = loaded.config;
         const profileName = options.profile ?? cfg.default_profile;
@@ -65,7 +64,6 @@ export function registerPlanCommand(program: Command): void {
         if (!resolved.ok) {
           process.stderr.write(`${resolved.message}\n`);
           process.exit(EXIT_CONFIG_ERROR);
-          return;
         }
         const { provider, model } = resolved.plan;
         const chat = selectPlanChatPort(provider);
@@ -74,13 +72,11 @@ export function registerPlanCommand(program: Command): void {
             `plan stage: provider "${provider}" is not supported yet (use provider: fake for now)\n`,
           );
           process.exit(EXIT_CONFIG_ERROR);
-          return;
         }
         const task = (options.task ?? taskArg).trim();
         if (task.length === 0) {
           process.stderr.write('plan: task text is empty\n');
           process.exit(EXIT_CONFIG_ERROR);
-          return;
         }
         const runId = randomUUID();
         const paths = await prepareRunArtifactPaths(cwd, runId);

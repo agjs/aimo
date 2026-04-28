@@ -72,7 +72,6 @@ async function runExecuteDelegatedOnce(options: {
   if (!isSafeRunDirectoryName(runId)) {
     process.stderr.write('execute: invalid --run id (use a UUID with no path separators)\n');
     process.exit(EXIT_OPERATIONAL_ERROR);
-    return;
   }
   const loaded = await loadResolvedAimoConfig(cwd);
   if (!loaded.ok) {
@@ -80,7 +79,6 @@ async function runExecuteDelegatedOnce(options: {
       process.stderr.write(`${m}\n`);
     }
     process.exit(EXIT_CONFIG_ERROR);
-    return;
   }
   const cfg = loaded.config;
   const profileName = options.profile ?? cfg.default_profile;
@@ -88,7 +86,6 @@ async function runExecuteDelegatedOnce(options: {
   if (!resolvedExec.ok) {
     process.stderr.write(`${resolvedExec.message}\n`);
     process.exit(EXIT_CONFIG_ERROR);
-    return;
   }
   const paths = await prepareRunArtifactPaths(cwd, runId);
   const planPath = join(paths.runDir, PLAN_MD_FILENAME);
@@ -97,13 +94,11 @@ async function runExecuteDelegatedOnce(options: {
   if (!planExists) {
     process.stderr.write(`execute: plan file missing at ${planPath} (run \`aimo plan\` first)\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
-    return;
   }
   const anchored = assertPlanPathAnchoredInRepoRoot({ repoRoot: cwd, planPath });
   if (!anchored.ok) {
     process.stderr.write(`${anchored.message}\n`);
     process.exit(EXIT_CONFIG_ERROR);
-    return;
   }
   const argvResolved = substitutePlanPathInArgv(
     resolvedExec.execute.command,
