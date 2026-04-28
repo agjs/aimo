@@ -16,6 +16,17 @@ bun src/app/cli.ts --help
 
 If `bun run check` is not green on a fresh clone, treat that as a bug — open an issue before layering new behavior.
 
+## Git hooks (Husky)
+
+After `bun install`, Husky wires:
+
+| Hook | What runs |
+| ---- | --------- |
+| **pre-commit** | `lint-staged` (eslint + prettier on staged files), then **`bun run check`** (typecheck, lint all, format check, depcruise, tests). |
+| **pre-push** | **`bun run check`** again so a commit made with `git commit --no-verify` still cannot push a broken tree without an explicit second bypass. |
+
+Do **not** use `--no-verify` to skip hooks for routine work — it exists only for emergencies (e.g. while repairing a broken hook). Agents should assume hooks are mandatory.
+
 ## Architectural rules (summary)
 
 These are enforced by ESLint (`eslint-plugin-boundaries`), dependency-cruiser, and CI:

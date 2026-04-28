@@ -244,6 +244,8 @@ bun run docs         # TypeDoc → dist/docs (local)
 bun run check        # typecheck + lint + format + depcruise + test
 ```
 
+Husky runs **`bun run check` on every `git commit` and again on `git push`** (see `CONTRIBUTING.md`). Do not merge or push if hooks are red.
+
 Conventional commits (`feat:`, `fix:`, `chore:`, …) — enforced by Husky + commitlint; **release-please** reads `main`.
 
 ---
