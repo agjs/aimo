@@ -55,3 +55,4 @@ Commands that support **`--json`** print one JSON object on stdout; pipe through
 ## License
 
 MIT — [`LICENSE`](./LICENSE).
+```
