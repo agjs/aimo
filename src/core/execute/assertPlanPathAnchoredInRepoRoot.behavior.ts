@@ -9,7 +9,7 @@ import { relative, resolve } from 'node:path';
 /**
  * Resolves paths and verifies the plan file lives under the repo root.
  * @param params - Raw `cwd` and plan path (absolute or relative).
- * @param params.repoRoot - Repository root path (typically `process.cwd()`).
+ * @param params.repoRoot - Repository root path (caller passes e.g. the CLI working directory from `app/`).
  * @param params.planPath - Candidate plan file path.
  * @returns Resolved paths on success, or a human-readable error.
  */

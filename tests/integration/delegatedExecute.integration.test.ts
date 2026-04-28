@@ -12,8 +12,7 @@ import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
 import { writeExecuteStageArtifacts } from '@runtime/bun/RunWorkspace.bun';
 import { describe, expect, it } from 'bun:test';
 
-/** Repository root (`tests/integration/` → repo). */
-const REPO_ROOT = join(import.meta.dir, '..', '..');
+const INTEGRATION_WORK_ROOT = join(import.meta.dir, '..', '..', '.aimo-test-work');
 
 async function initGitWithEmptyCommit(cwd: string): Promise<void> {
   const init = Bun.spawn(['git', 'init'], { cwd, stdout: 'pipe', stderr: 'pipe' });
@@ -38,7 +37,8 @@ async function initGitWithEmptyCommit(cwd: string): Promise<void> {
 
 describe('delegated execute (integration)', () => {
   it('runs argv with substituted plan path and captures git diff HEAD', async () => {
-    const root = await mkdtemp(join(REPO_ROOT, '.aimo-int-ex-'));
+    await mkdir(INTEGRATION_WORK_ROOT, { recursive: true });
+    const root = await mkdtemp(join(INTEGRATION_WORK_ROOT, 'int-ex-'));
     await initGitWithEmptyCommit(root);
     const runId = 'run-int-1';
     const runDir = join(root, ...relativeRunDirectoryPath(runId).split('/'));

@@ -22,8 +22,9 @@
     "format:check": "prettier --check .",
     "test": "bun test",
     "depcruise": "depcruise src",
+    "check:core-purity": "bash scripts/check-core-purity.sh",
     "docs": "typedoc",
-    "check": "bun run typecheck && bun run lint && bun run format:check && bun run depcruise && bun test",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun run depcruise && bun run check:core-purity && bun test",
     "prepare": "husky"
   },
   "dependencies": {

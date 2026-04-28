@@ -27,6 +27,7 @@ jobs:
       - run: bun run lint
       - run: bun run format:check
       - run: bun run depcruise
+      - run: bun run check:core-purity
       - run: bun test
 
   arch-invariants:
@@ -34,13 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
-      - name: banned patterns in src/core
-        run: |
-          set -euo pipefail
-          if [ ! -d src/core ]; then echo 'OK (no src/core yet)'; exit 0; fi
-          # GNU grep on ubuntu-latest — same semantics as rg: exit 0 iff matches found.
-          if grep -rHnE --include='*.ts' 'process\.|Bun\.|fetch\(|Date\.now|Math\.random' src/core; then
-            echo 'Banned pattern in src/core — use ports + runtime instead.'
-            exit 1
-          fi
-          echo 'OK: no banned patterns under src/core'
+      - uses: oven-sh/setup-bun@v2.0.2
+        with:
+          bun-version: '1.3.13'
+      - run: bun run check:core-purity

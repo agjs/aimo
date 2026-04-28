@@ -9,6 +9,8 @@ coverage/
 
 # Test artifacts
 .nyc_output/
+.aimo-test-work/
+# legacy (tests used to mkdtemp at repo root)
 .aimo-e2e-*/
 .aimo-int-ex-*/
 
