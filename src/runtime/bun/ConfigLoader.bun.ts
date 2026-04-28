@@ -21,11 +21,19 @@ export const USER_CONFIG_YAML_BASENAME = 'config.yaml' as const;
 export const PROJECT_AIMO_YAML_BASENAME = 'aimo.yaml' as const;
 
 /**
+ * Absolute directory `~/.config/ai-model-orchestrator/` (created by `aimo init`).
+ * @returns Normalized path for the current OS user.
+ */
+export function getUserGlobalConfigDir(): string {
+  return join(homedir(), '.config', USER_CONFIG_DIR);
+}
+
+/**
  * Absolute path to `~/.config/ai-model-orchestrator/config.yaml`.
  * @returns Normalized path for the current OS user.
  */
 export function getUserGlobalConfigYamlPath(): string {
-  return join(homedir(), '.config', USER_CONFIG_DIR, USER_CONFIG_YAML_BASENAME);
+  return join(getUserGlobalConfigDir(), USER_CONFIG_YAML_BASENAME);
 }
 
 /**

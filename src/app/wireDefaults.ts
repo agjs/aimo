@@ -5,11 +5,16 @@
  */
 
 import { safeParseAimoConfig } from '@core/config/AimoConfig.schema';
+import {
+  getGlobalStarterConfigYaml,
+  getLocalStarterAimoYaml,
+} from '@core/config/AimoInitTemplates.behavior';
 import { mergeConfigRecordLayers } from '@core/config/deepMergeRecord.behavior';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
 import { CleanupRegistry } from '@core/lifecycle/CleanupRegistry.behavior';
 import type { IClockPort } from '@core/ports/IClockPort.types';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
+import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
 import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
 
 /**
@@ -42,8 +47,11 @@ export function createCleanupRegistry(): CleanupRegistry {
 export function assertAimoConfigWiring(): void {
   void mergeConfigRecordLayers([{ schema_version: 1 }, {}]);
   void safeParseAimoConfig({});
+  void getGlobalStarterConfigYaml();
+  void getLocalStarterAimoYaml();
   void loadAimoConfigFromPaths;
   void loadResolvedAimoConfig;
+  void runInitWrites;
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

@@ -13,7 +13,7 @@ Goal: end-to-end **plan → execute → review** on disk, **fake LLM** in CI, re
 | # | Deliverable | Status |
 | - | ----------- | ------ |
 | A1 | Config: Zod schema, merge `~/.config/ai-model-orchestrator/config.yaml` + `./aimo.yaml` (precedence documented) | Done |
-| A2 | `aimo init` — writes commented starter config (+ optional local `aimo.yaml`) | Not started |
+| A2 | `aimo init` — writes commented starter config (+ optional local `aimo.yaml`) | Done |
 | A3 | `aimo doctor` — resolves config paths, reports schema/version, missing files | Partial (`doctor` + `--json` + e2e; extend for providers / env probes) |
 | A4 | Fake provider + shared chat request/response types; wired via `IHttpPort` or in-process fake | Not started |
 | A5 | `aimo plan` — planner prompt, stream/save `plan.md`, run id under `.aimo/runs/<id>/` | Not started |

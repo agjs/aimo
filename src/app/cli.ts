@@ -10,6 +10,7 @@ import { PACKAGE_VERSION } from '@shared/constants/Version.constants';
 import { Command } from 'commander';
 
 import { registerDoctorCommand } from './commands/doctor.command';
+import { registerInitCommand } from './commands/init.command';
 import {
   assertAimoConfigWiring,
   createCleanupRegistry,
@@ -48,6 +49,7 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
       program.outputHelp();
     });
 
+  registerInitCommand(program);
   registerDoctorCommand(program);
 
   const [, , ...rest] = argv;
