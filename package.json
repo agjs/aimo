@@ -25,6 +25,7 @@
     "check:core-purity": "bash scripts/check-core-purity.sh",
     "docs": "typedoc",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun run depcruise && bun run check:core-purity && bun test",
+    "build:binary": "bun build --compile src/app/cli.ts --outfile dist/aimo",
     "prepare": "husky"
   },
   "dependencies": {

@@ -1,0 +1,67 @@
+name: release-binaries
+
+# Builds standalone `aimo` executables with `bun build --compile` for the platforms below
+# and uploads them to the GitHub Release that triggered this run. Pairs with release-please.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to attach assets to (e.g. v1.2.3)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build aimo binary
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            asset: aimo-linux-x64
+          - os: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            asset: aimo-linux-arm64
+          - os: macos-latest
+            target: bun-darwin-arm64
+            asset: aimo-darwin-arm64
+          - os: macos-13
+            target: bun-darwin-x64
+            asset: aimo-darwin-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - uses: oven-sh/setup-bun@v2.0.2
+        with:
+          bun-version: '1.3.13'
+
+      - run: bun install --frozen-lockfile
+
+      - name: bun build --compile
+        run: |
+          mkdir -p dist
+          bun build --compile --target=${{ matrix.target }} \
+            src/app/cli.ts --outfile dist/${{ matrix.asset }}
+
+      - name: smoke test binary
+        # Only meaningful on the same os/arch as the runner.
+        if: matrix.target == 'bun-linux-x64' || matrix.target == 'bun-darwin-arm64'
+        run: |
+          chmod +x dist/${{ matrix.asset }}
+          ./dist/${{ matrix.asset }} --version
+          ./dist/${{ matrix.asset }} doctor --json | head -c 200
+
+      - name: upload to release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: ${{ github.event.release.tag_name || inputs.tag }}
+          files: dist/${{ matrix.asset }}
