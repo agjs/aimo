@@ -19,6 +19,7 @@ bun src/app/cli.ts ping --json  # one fake chat completion (smoke)
 bun src/app/cli.ts plan 'your task' --json  # planner stage → `.aimo/runs/<uuid>/plan.md` + manifest
 # after overriding profile execute to `type: delegated` in ./aimo.yaml:
 bun src/app/cli.ts execute --run '<uuid-from-plan-json>' --json
+bun src/app/cli.ts review --run '<same-uuid>' --json   # writes review.md; exit 0/2/3 from VERDICT
 bun src/app/cli.ts --help
 ```
 

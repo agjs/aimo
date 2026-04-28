@@ -1,6 +1,6 @@
 /**
- * @file cliExecute.e2e.test.ts
- * @description Subprocess tests for `aimo execute` after `init` + `plan` with delegated profile.
+ * @file cliReview.e2e.test.ts
+ * @description Subprocess tests for `aimo review` after plan + execute (isolated HOME + git).
  */
 
 import { readFile } from 'node:fs/promises';
@@ -34,8 +34,8 @@ async function initGitWithEmptyCommit(cwd: string): Promise<void> {
   expect(await commit.exited).toBe(0);
 }
 
-describe('cli execute (e2e)', () => {
-  it('runs delegated argv and writes diff + execute.result.json', async () => {
+describe('cli review (e2e)', () => {
+  it('writes review.md and exits 0 with fake provider', async () => {
     const { home, cwd } = await createIsolatedHomeAndProject();
     await initGitWithEmptyCommit(cwd);
 
@@ -56,25 +56,16 @@ profiles:
 
     const plan = await spawnCli(['plan', 'hello', '--json'], { cwd, env: { HOME: home } });
     expect(plan.exitCode).toBe(EXIT_SUCCESS);
-    const planBody = JSON.parse(plan.stdout) as { run_id: string };
-    const runId = planBody.run_id;
+    const runId = (JSON.parse(plan.stdout) as { run_id: string }).run_id;
 
     const ex = await spawnCli(['execute', '--run', runId, '--json'], { cwd, env: { HOME: home } });
     expect(ex.exitCode).toBe(EXIT_SUCCESS);
-    const body = JSON.parse(ex.stdout) as {
-      ok: boolean;
-      exit_code: number;
-      artifacts: { git_diff_before: string; execute_result: string };
-    };
-    expect(body.ok).toBe(true);
-    expect(body.exit_code).toBe(0);
-    const before = await readFile(body.artifacts.git_diff_before, 'utf8');
-    expect(typeof before).toBe('string');
-    const result = JSON.parse(await readFile(body.artifacts.execute_result, 'utf8')) as {
-      stage: string;
-      exit_code: number;
-    };
-    expect(result.stage).toBe('execute');
-    expect(result.exit_code).toBe(0);
+
+    const rev = await spawnCli(['review', '--run', runId, '--json'], { cwd, env: { HOME: home } });
+    expect(rev.exitCode).toBe(EXIT_SUCCESS);
+    const body = JSON.parse(rev.stdout) as { verdict: string; review_path: string };
+    expect(body.verdict).toBe('pass');
+    const text = await readFile(body.review_path, 'utf8');
+    expect(text).toContain('VERDICT: pass');
   });
 });

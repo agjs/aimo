@@ -21,9 +21,14 @@ import { buildPlanMessages } from '@core/plan/BuildPlanMessages.behavior';
 import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import type { IClockPort } from '@core/ports/IClockPort.types';
 import type { IHttpPort } from '@core/ports/IHttpPort.types';
-import { relativePlanMdPath } from '@core/runs/AimoRunPaths.constants';
+import { buildReviewMessages } from '@core/review/BuildReviewMessages.behavior';
+import { exitCodeForReviewVerdict } from '@core/review/exitCodeForReviewVerdict.behavior';
+import { parseReviewVerdictFromMarkdown } from '@core/review/ParseReviewVerdict.behavior';
+import { resolveReviewStageForProfile } from '@core/review/ResolveReviewStage.behavior';
+import { relativePlanMdPath, relativeReviewMdPath } from '@core/runs/AimoRunPaths.constants';
 import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
+import { runReviewChat } from '@features/reviewStage.feature';
 import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.provider';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
 import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
@@ -31,7 +36,11 @@ import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/Co
 import { runDelegatedArgv } from '@runtime/bun/DelegatedSpawn.bun';
 import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
 import { BunHttpPort } from '@runtime/bun/HttpPort.bun';
-import { prepareRunArtifactPaths, writeExecuteStageArtifacts } from '@runtime/bun/RunWorkspace.bun';
+import {
+  prepareRunArtifactPaths,
+  writeExecuteStageArtifacts,
+  writeReviewMarkdown,
+} from '@runtime/bun/RunWorkspace.bun';
 
 /**
  * Creates the default wall-clock port for production-style runs.
@@ -140,6 +149,28 @@ export function assertPlanStageWired(): void {
   });
   void runPlanChat;
   void prepareRunArtifactPaths;
+}
+
+/**
+ * Keeps review-stage core + feature + run workspace wiring in the dependency graph for `aimo review`.
+ */
+export function assertReviewStageWired(): void {
+  void buildReviewMessages({ planMarkdown: 'p', diffMarkdown: 'd', transcriptMarkdown: '' });
+  void parseReviewVerdictFromMarkdown('summary\n\nVERDICT: pass');
+  void exitCodeForReviewVerdict('pass');
+  void relativeReviewMdPath('00000000-0000-0000-0000-000000000000');
+  const revCfg = safeParseAimoConfig({
+    schema_version: 1,
+    default_profile: 'default',
+    profiles: {
+      default: { review: { provider: 'fake', model: 'stub' } },
+    },
+  });
+  if (revCfg.ok) {
+    void resolveReviewStageForProfile(revCfg.data, 'default');
+  }
+  void runReviewChat;
+  void writeReviewMarkdown;
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

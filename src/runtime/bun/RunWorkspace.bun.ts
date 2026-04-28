@@ -14,6 +14,7 @@ import {
   MANIFEST_JSON_FILENAME,
   PLAN_MD_FILENAME,
   relativeRunDirectoryPath,
+  REVIEW_MD_FILENAME,
 } from '@core/runs/AimoRunPaths.constants';
 
 /**
@@ -80,4 +81,13 @@ export async function writeExecuteStageArtifacts(
   await writeFile(join(runDir, GIT_DIFF_BEFORE_BASENAME), bodies.gitDiffBefore, 'utf8');
   await writeFile(join(runDir, GIT_DIFF_AFTER_BASENAME), bodies.gitDiffAfter, 'utf8');
   await writeFile(join(runDir, EXECUTE_RESULT_JSON_BASENAME), bodies.executeResultJson, 'utf8');
+}
+
+/**
+ * Writes `review.md` under an existing run directory.
+ * @param runDir - Absolute `.aimo/runs/<id>/` path.
+ * @param reviewMarkdown - UTF-8 markdown (must include trailing `VERDICT:` line).
+ */
+export async function writeReviewMarkdown(runDir: string, reviewMarkdown: string): Promise<void> {
+  await writeFile(join(runDir, REVIEW_MD_FILENAME), reviewMarkdown, 'utf8');
 }

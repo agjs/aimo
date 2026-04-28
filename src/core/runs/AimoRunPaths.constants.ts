@@ -25,6 +25,9 @@ export const GIT_DIFF_AFTER_BASENAME = 'git.diff.after.txt' as const;
 /** Execute-stage summary (exit code, git capture errors). */
 export const EXECUTE_RESULT_JSON_BASENAME = 'execute.result.json' as const;
 
+/** Reviewer output filename inside a run directory. */
+export const REVIEW_MD_FILENAME = 'review.md' as const;
+
 /**
  * Relative directory for one run (POSIX slashes).
  * @param runId - Opaque run identifier (e.g. UUID).
@@ -50,4 +53,13 @@ export function relativePlanMdPath(runId: string): string {
  */
 export function relativeManifestJsonPath(runId: string): string {
   return `${relativeRunDirectoryPath(runId)}/${MANIFEST_JSON_FILENAME}`;
+}
+
+/**
+ * Relative path to `review.md` for a run.
+ * @param runId - Run identifier.
+ * @returns Path like `.aimo/runs/<runId>/review.md`.
+ */
+export function relativeReviewMdPath(runId: string): string {
+  return `${relativeRunDirectoryPath(runId)}/${REVIEW_MD_FILENAME}`;
 }

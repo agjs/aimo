@@ -9,6 +9,8 @@ coverage/
 
 # Test artifacts
 .nyc_output/
+.aimo-e2e-*/
+.aimo-int-ex-*/
 
 # Editor
 .DS_Store

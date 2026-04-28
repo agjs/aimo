@@ -12,7 +12,8 @@
 | `commands/ping.command.ts` | `aimo ping` / `--json` — one round-trip through `InProcessFakeChatProvider` (CI smoke). |
 | `commands/plan.command.ts` | `aimo plan` / `--json` — planner chat, `.aimo/runs/<id>/plan.md` + `manifest.json` (fake provider for now). |
 | `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertExecuteStageWired`, `assertPlanStageWired`. |
+| `commands/review.command.ts` | `aimo review --run <id>` — reviewer chat, `review.md`, process exit from `VERDICT` (`0` / `2` / `3`). |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider` factories, `assertExecuteStageWired`, `assertPlanStageWired`, `assertReviewStageWired`. |
 
 ## `src/core/`
 
@@ -32,7 +33,11 @@
 | `ports/IHttpPort.types.ts` | JSON POST port for OpenAI-compatible HTTP providers. |
 | `plan/BuildPlanMessages.behavior.ts` | Planner system + user messages from task text. |
 | `plan/ResolvePlanStage.behavior.ts` | Resolve `profiles.*.plan` routing from merged config. |
-| `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers. |
+| `review/BuildReviewMessages.behavior.ts` | Reviewer system + user messages (plan, diff, transcript slots). |
+| `review/exitCodeForReviewVerdict.behavior.ts` | Map `VERDICT` token to `ExitCodes` review exits. |
+| `review/ParseReviewVerdict.behavior.ts` | Parse final `VERDICT:` line from reviewer markdown. |
+| `review/ResolveReviewStage.behavior.ts` | Resolve `profiles.*.review` routing from merged config. |
+| `runs/AimoRunPaths.constants.ts` | Relative `.aimo/runs/<id>/` path helpers (`plan.md`, `review.md`, diff files, …). |
 | `runs/RunManifest.types.ts` | Plan-stage `manifest.json` shape. |
 | `runs/RunManifestJson.behavior.ts` | Serialize plan manifest to pretty JSON. |
 | `execute/assertPlanPathAnchoredInRepoRoot.behavior.ts` | Reject plan paths that resolve outside repo root. |
@@ -46,7 +51,8 @@
 | Module | Responsibility |
 | ------ | ---------------- |
 | `planStage.feature.ts` | `runPlanChat` — one completion via `IChatCompletionPort` + `buildPlanMessages`. |
-| `runPipeline.feature.ts` | Placeholder for full pipeline; keeps `runPlanChat` in the build graph. |
+| `reviewStage.feature.ts` | `runReviewChat` — one completion via `IChatCompletionPort` + `buildReviewMessages`. |
+| `runPipeline.feature.ts` | Placeholder for full pipeline; keeps `runPlanChat` / `runReviewChat` in the build graph. |
 
 ## `src/providers/`
 
@@ -65,7 +71,7 @@
 | `HttpPort.bun.ts` | `IHttpPort` via `fetch` + JSON body/parse. |
 | `GitDiffHead.bun.ts` | `readGitDiffHeadText` — `git diff HEAD` capture for execute stage. |
 | `DelegatedSpawn.bun.ts` | `runDelegatedArgv` — `Bun.spawn` argv-only, optional stdin from `Bun.file`. |
-| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts`. |
+| `RunWorkspace.bun.ts` | `prepareRunArtifactPaths`, `writePlanArtifacts`, `writeExecuteStageArtifacts`, `writeReviewMarkdown`. |
 
 ## `src/shared/`
 
@@ -80,7 +86,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `execute`, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `execute`, `review`, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
 | `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
 | `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |

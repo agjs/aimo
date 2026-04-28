@@ -7,6 +7,7 @@
 import { EXIT_SUCCESS } from '@core/contracts/ExitCodes.constants';
 
 import { runPlanChat } from './planStage.feature';
+import { runReviewChat } from './reviewStage.feature';
 
 /**
  * Temporary hook proving `features` → `core` wiring compiles under boundary rules.
@@ -14,5 +15,6 @@ import { runPlanChat } from './planStage.feature';
  */
 export function getPipelinePlaceholderExitCode(): typeof EXIT_SUCCESS {
   void runPlanChat;
+  void runReviewChat;
   return EXIT_SUCCESS;
 }
