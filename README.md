@@ -44,6 +44,8 @@ aimo run "your task" --dry-run --json
 aimo --help
 ```
 
+Commands that support **`--json`** print one JSON object on stdout; pipe through **`jq`** when you want it formatted (e.g. `aimo doctor --json | jq .`).
+
 ## Repo
 
 - [`AGENTS.md`](./AGENTS.md) — layout and conventions for changes here  
