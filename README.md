@@ -44,7 +44,7 @@ aimo run "your task" --dry-run --json
 aimo --help
 ```
 
-Commands that support **`--json`** print one JSON object on stdout; pipe through **`jq`** when you want it formatted (e.g. `aimo doctor --json | jq .`).
+Commands that support **`--json`** print one JSON object on stdout; pipe through **`jq`** when you want it formatted (e.g. `aimo doctor --json | jq .` or `aimo run "your task" --dry-run --json | jq .`).
 
 ## Repo
 
