@@ -12,10 +12,14 @@ import {
 import { mergeConfigRecordLayers } from '@core/config/deepMergeRecord.behavior';
 import { CURRENT_SCHEMA_VERSION } from '@core/contracts/SchemaVersion.constants';
 import { CleanupRegistry } from '@core/lifecycle/CleanupRegistry.behavior';
+import type { IChatCompletionPort } from '@core/ports/IChatCompletionPort.types';
 import type { IClockPort } from '@core/ports/IClockPort.types';
+import type { IHttpPort } from '@core/ports/IHttpPort.types';
+import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.provider';
 import { BunClockPort } from '@runtime/bun/ClockPort.bun';
 import { runInitWrites } from '@runtime/bun/ConfigInitWriter.bun';
 import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/ConfigLoader.bun';
+import { BunHttpPort } from '@runtime/bun/HttpPort.bun';
 
 /**
  * Creates the default wall-clock port for production-style runs.
@@ -39,6 +43,30 @@ export function getCurrentSchemaVersion(): typeof CURRENT_SCHEMA_VERSION {
  */
 export function createCleanupRegistry(): CleanupRegistry {
   return new CleanupRegistry();
+}
+
+/**
+ * Default JSON HTTP client for future OpenAI-compatible adapters.
+ * @returns Bun `fetch`-backed {@link IHttpPort}.
+ */
+export function createDefaultHttpPort(): IHttpPort {
+  return new BunHttpPort();
+}
+
+/**
+ * In-process fake chat backend for CI and dry runs (no network).
+ * @returns as {@link IChatCompletionPort}.
+ */
+export function createInProcessFakeChatPort(): IChatCompletionPort {
+  return new InProcessFakeChatProvider();
+}
+
+/**
+ * Keeps provider + HTTP port types in the build graph until stages call them.
+ */
+export function assertProviderPortsWired(): void {
+  void createDefaultHttpPort;
+  void createInProcessFakeChatPort;
 }
 
 /**

@@ -15,13 +15,13 @@ Goal: end-to-end **plan → execute → review** on disk, **fake LLM** in CI, re
 | A1 | Config: Zod schema, merge `~/.config/ai-model-orchestrator/config.yaml` + `./aimo.yaml` (precedence documented) | Done |
 | A2 | `aimo init` — writes commented starter config (+ optional local `aimo.yaml`) | Done |
 | A3 | `aimo doctor` — resolves config paths, reports schema/version, missing files | Partial (`doctor` + `--json` + e2e; extend for providers / env probes) |
-| A4 | Fake provider + shared chat request/response types; wired via `IHttpPort` or in-process fake | Not started |
+| A4 | Fake provider + shared chat request/response types; wired via `IHttpPort` or in-process fake | Done |
 | A5 | `aimo plan` — planner prompt, stream/save `plan.md`, run id under `.aimo/runs/<id>/` | Not started |
 | A6 | Delegated `aimo execute` — spawn command with substitutions, capture diff | Not started |
 | A7 | `aimo review` — reviewer prompt, `review.md` + `VERDICT:` line | Not started |
 | A8 | `aimo run` + `--dry-run` — orchestrates A5–A7; exit codes per [ExitCodes](../../src/core/contracts/ExitCodes.constants.ts) | Not started |
 | A9 | Step-shaped flags (`--plan`, `--from`, etc.) so stages compose in shell | Not started |
-| A10 | Tests: schema, merge, fake provider, integration + **e2e** for CLI (`bun test`) | Partial (e2e `doctor`, `spawnCli` fix; add pipeline e2e with fake provider) |
+| A10 | Tests: schema, merge, fake provider, integration + **e2e** for CLI (`bun test`) | Partial (`ping` e2e + fake integration; add full plan→review pipeline e2e in A5–A8) |
 
 **Exit criteria for A:** `bun run check` green; e2e runs `aimo` with fake provider in CI; README quickstart updated.
 

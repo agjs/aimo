@@ -15,6 +15,7 @@ bun install
 bun run check
 bun src/app/cli.ts init --json   # optional: write starter ~/.config/.../config.yaml + ./aimo.yaml
 bun src/app/cli.ts doctor --json # validate merged config
+bun src/app/cli.ts ping --json  # one fake chat completion (smoke)
 bun src/app/cli.ts --help
 ```
 

@@ -19,10 +19,13 @@ export function mergeConfigRecordLayers(
   if (layers.length === 0) {
     return {};
   }
+
   let acc: Record<string, unknown> = { ...layers[0] };
+
   for (const layer of layers.slice(1)) {
     acc = deepMergeWithOverlay(acc, layer);
   }
+
   return acc;
 }
 
@@ -37,6 +40,7 @@ function deepMergeWithOverlay(
   overlay: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...base };
+
   for (const [key, overlayValue] of Object.entries(overlay)) {
     const baseValue = base[key];
     if (isPlainObject(baseValue) && isPlainObject(overlayValue)) {
