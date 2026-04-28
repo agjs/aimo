@@ -4,8 +4,25 @@
  * @layer app
  * @description CLI entrypoint for `aimo` / `ai-model-orchestrator` (commander).
  */
+import { getPipelinePlaceholderExitCode } from '@features/runPipeline.feature';
 import { PACKAGE_VERSION } from '@shared/constants/Version.constants';
 import { Command } from 'commander';
+
+import {
+  createCleanupRegistry,
+  createDefaultClockPort,
+  getCurrentSchemaVersion,
+} from './wireDefaults';
+
+/**
+ * Ensures app → runtime and app → features → core graph stays linked (no tree-shake orphans).
+ */
+function assertCompositionWired(): void {
+  void getCurrentSchemaVersion();
+  void createCleanupRegistry();
+  void createDefaultClockPort().nowMs();
+  void getPipelinePlaceholderExitCode();
+}
 
 /**
  * Parses argv and runs the root command (placeholder until Milestone A commands land).
@@ -13,6 +30,7 @@ import { Command } from 'commander';
  * @returns Promise that resolves when the process should exit with code 0.
  */
 export async function main(argv: readonly string[] = process.argv): Promise<void> {
+  assertCompositionWired();
   const program = new Command();
   program
     .name('aimo')
