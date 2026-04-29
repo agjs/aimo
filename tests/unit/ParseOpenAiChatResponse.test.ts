@@ -48,4 +48,38 @@ describe('parseOpenAiChatCompletionJson', () => {
     const r = parseOpenAiChatCompletionJson(200, { id: 'x', model: 'm', choices: [] });
     expect(r.ok).toBe(false);
   });
+
+  it('parses assistant message with tool_calls', () => {
+    const withTools = {
+      id: 'chat-tc',
+      model: 'm',
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                id: 'call-1',
+                type: 'function',
+                function: { name: 'read_file', arguments: '{"path":"a.txt"}' },
+              },
+            ],
+          },
+          finish_reason: 'tool_calls',
+        },
+      ],
+    };
+    const r = parseOpenAiChatCompletionJson(200, withTools);
+    expect(r.ok).toBe(true);
+    if (!r.ok) {
+      return;
+    }
+
+    const msg = r.data.choices[0]?.message;
+    expect(msg?.role).toBe('assistant');
+    expect(msg?.tool_calls?.[0]?.function.name).toBe('read_file');
+    expect(msg?.tool_calls?.[0]?.id).toBe('call-1');
+  });
 });

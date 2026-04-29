@@ -1,6 +1,6 @@
 # Spec — `aimo session` (interactive subagent loop)
 
-Status: **draft / not implemented**. This is the Phase 0 paper artifact for the `aimo session` initiative. No code lands without an update here first.
+Status: **Phase 1 shipped** (append-only log, REPL, reducer, lock, `/use` → `run_bound`). **Phase 2 shipped:** merged YAML `session.tools`, cold-start `approval` snapshot, `IRepoToolsPort` + `BunRepoTools` (`read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, `show_artifact`), slash commands, eager `@plan` / `@diff` / `@review` / `@run:<id>` mention expansion (D1), and the interactive `ask` prompt flow. **Phase 6 (model tool-calling) partial/done:** free-text turns pass function tools when descriptors are non-empty; the session dispatches `tool_call` / `tool_result` from the same port as slash; inner loop caps at **128** `chat.complete` calls per user line (`tool_iteration_limit` on exceed). **Backlog (Phase 3+):** streaming assistant text, checkpoints/undo, the subagent registry beyond this slice.
 
 ## 1. Goals (in scope)
 
@@ -73,10 +73,13 @@ interface IEventEnvelope<TKind extends string, TPayload> {
 | `tool_call` | A tool was invoked (slash or model-initiated). |
 | `tool_result` | Tool completed; large bodies spill to `blobs/`. |
 | `approval` | User decision for a permission prompt. |
+| `ask_initiated` | Recorded just before an interactive `ask` prompt opens; cleared by the next `approval` (or by `cancelled`). |
 | `stage_transition` | Mode changed: `idle ↔ plan ↔ review ↔ free`. |
 | `artifact_write` | A file under `.aimo/runs/<id>/` was written. |
 | `cancelled` | Turn aborted via SIGINT or `/cancel`. |
 | `error` | Recoverable error path (e.g. `tool_iteration_limit`). |
+| `run_bound` | Session bound to `.aimo/runs/<run_id>/` via `/use <runId>` (persisted for replay). |
+| `event_body_spill` | Wrapper when a serialized JSONL line exceeds the size cap; full line stored under `blobs/`. |
 
 Phase 4 adds: `checkpoint`, `compacted`, `fork`, `branched_from`.
 Phase 5 adds: `subagent_call`, `subagent_result`.
@@ -126,11 +129,23 @@ interface ISessionState {
 | `core/subagents/SubagentDefinition.types.ts` | `ISubagentDefinition` + result type. |
 | `core/subagents/SubagentRegistry.behavior.ts` | Pure registry / lookup. |
 | `features/sessionLoop.feature.ts` | Read line → dispatch → emit events → persist. |
+| `features/sessionLoopSlashGitShow.feature.ts` | `/git-status`, `/git-diff`, `/show` repo-tool slash handlers. |
 | `features/runSubagent.feature.ts` | Build messages, run tools, account usage. |
 | `features/planChatLoop.feature.ts` | Multi-turn planner; no disk writes. |
 | `features/reviewChatLoop.feature.ts` | Multi-turn reviewer; no disk writes. |
 | `runtime/bun/SessionEventLog.bun.ts` | Append-only `events.jsonl` + lock + blob spill. |
-| `runtime/bun/RepoToolsBun.bun.ts` | `IRepoToolsPort` adapter (fs / git / rg). |
+| `runtime/bun/RepoTools.bun.ts` | `IRepoToolsPort` adapter (`read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, `show_artifact`). |
+| `runtime/bun/runRepoGrep.bun.ts` | Bounded repo directory walk + line regex search. |
+| `runtime/bun/runRepoListTree.bun.ts` | Bounded depth-first listing (skip-dir set shared with grep). |
+| `runtime/bun/runRepoGitStatus.bun.ts` | Bounded `git status --short -b` in repo root. |
+| `runtime/bun/runRepoGitDiff.bun.ts` | Bounded `git diff HEAD` / `git diff --cached` in repo root. |
+| `runtime/bun/runRepoShowArtifact.bun.ts` | Bounded read under `.aimo/runs/<id>/` with containment checks. |
+| `core/repoTools/RepoWalkSkipDirs.constants.ts` | Basenames omitted from repo walks (`grep`, `list_tree`, …). |
+| `core/repoTools/simpleGlobPredicate.behavior.ts` | Optional `*.ts` / `**/*.md` path filter for `grep`. |
+| `runtime/bun/SessionAdvisoryLock.bun.ts` | Exclusive `flock` on session `.lock`. |
+| `core/ports/ISessionEventLogPort.types.ts` | Append + replay + snapshot contract for sessions. |
+| `core/ports/IRepoToolsPort.types.ts` | Bounded repo tool calls from the session loop. |
+| `core/session/mergeSessionToolsFromConfig.behavior.ts` | Merge `session.tools` from YAML into default-deny levels. |
 | `app/commands/session.command.ts` | Registers `aimo session` / `aimo session resume <id>`. |
 | `app/session/sessionRepl.app.ts` | Readline + prompt + colored output only. |
 
@@ -138,7 +153,7 @@ interface ISessionState {
 
 1. **Cancellation.** Every model call, every subagent, every long tool runs under an `AbortController` rooted at the REPL turn. SIGINT or `/cancel` aborts → `cancelled` event → return to prompt. Partial assistant streams are **not persisted** as `assistant_turn`.
 2. **Tool result truncation.** `read_file` accepts `{ path, offset?, limit?, max_bytes? }` (default `max_bytes` ≈ 64 KB). On truncation: result body carries `truncated: true, total_lines: N`. `grep`: `{ pattern, glob?, max_matches? (default 200), context_lines? }`. `list_tree`: `max_entries`.
-3. **Permissions UX.** `ask` prompts `[a]llow once / [s]ession / [n]ever / [d]eny once`. Decisions become `approval` events. The reducer applies them to `state.approvals` (D2).
+3. **Permissions UX.** `ask` prompts `[a]llow once / [s]ession / [n]ever / [d]eny once`. Decisions become `approval` events. The reducer applies them to `state.approvals` (D2). **Current implementation:** YAML `ask` is mapped to reducer level `session` and recorded on cold start without an interactive prompt; full prompt UX is Phase 2 backlog.
 4. **Cost / usage accounting.** Reducer maintains `usageTotal` and per-subagent breakdown. `/status` reads from there. `maxCostUsd` is enforced against this when a token-cost source is wired (until then, soft turn/char caps).
 5. **Streaming state machine.** `idle → streaming → idle | cancelled`. `/lock` and most slash commands are denied while `streaming`.
 6. **Path safety.** All filesystem-touching tools resolve via `realpath` + `isPathInsideRoot.behavior.ts` (already shipped).
@@ -154,16 +169,16 @@ Land `docs/ai/spec-session.md`, add roadmap entry, no code.
 
 - Event union (Phase 1 subset, §5.2), reducer, on-disk layout, lock, blob spill.
 - `aimo session` (new), `aimo session resume <id>`.
-- Slash set: `/help [cmd]`, `/status`, `/use <runId>`, `/cancel`, `/exit`, `/resume`.
+- Slash set: `/help [cmd]`, `/status`, `/use <runId>`, `/read`, `/grep`, `/tree`, `/git-status`, `/git-diff`, `/show`, `/approvals`, `/cancel`, `/exit`, `/resume`.
 - `/status` shape: `session id, mode, bound run id, last checkpoint (—), usageTotal, pending approval`.
 - Tests: reducer unit; loop integration (fake chat, fake fs); `cliSession.e2e.test.ts` driving stdin.
 
 ### Phase 2 — repo tools + `@`-mentions
 
-- Tools: `read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, `show_artifact`.
-- Slash forms: `/read`, `/grep`, `/tree`, `/diff`, `/show`.
+- **Done (subset):** Zod `session.tools` on merged config (`allow | deny | ask | never | session` per `TToolName`); on **new** sessions, non-`deny` levels are persisted as initial `approval` events; `/read` / `/grep` / `/tree` / `/git-status` / `/git-diff` / `/show` → `tool_call` / `tool_result` via `BunRepoTools` (`read_file`, bounded line-regex `grep` with optional simple glob, bounded `list_tree`, bounded `git status --short -b`, bounded `git diff HEAD` or `--cached`, bounded `show_artifact` under a bound run); `/approvals` prints current reducer levels. Session `/status` is unchanged (reducer snapshot); `/show` reads only under `.aimo/runs/<id>/` after `/use`.
+- **Remaining:** Richer `grep` (context lines, `rg` parity); `@`-mentions; interactive `ask` UX.
 - `@`-mention expansion (D1) — lazy `@src/foo.ts`; eager `@plan` / `@diff` / `@review` / `@run:<id>`.
-- YAML schema add (additive, no `schema_version` bump):
+- YAML (additive; no `schema_version` bump) — `ask` is stored as reducer level `session` until interactive prompts exist:
   ```yaml
   session:
     tools:
@@ -177,7 +192,7 @@ Land `docs/ai/spec-session.md`, add roadmap entry, no code.
       run_shell: deny
       web_search: deny
   ```
-- `/approvals` lists/clears.
+- `/approvals` lists levels (clear/edit flows deferred).
 
 ### Phase 3 — multi-turn plan / review (+ optional streaming)
 
@@ -256,7 +271,7 @@ flowchart LR
   user[User input] --> repl[REPL]
   repl --> dispatcher[Command + mention dispatcher]
 
-  dispatcher -->|/read /grep /tree /diff /show| repoTools[Repo tools]
+  dispatcher -->|/read /grep /tree /git-status /git-diff /show (artifact)| repoTools[Repo tools]
   dispatcher -->|/sub explorer ...| registry[Subagent registry]
   dispatcher -->|free text in plan/review| stageChat[Plan or review chat]
   dispatcher -->|/checkpoint /undo /fork /restore| timeline[Timeline ops]

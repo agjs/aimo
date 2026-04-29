@@ -5,6 +5,7 @@
  */
 
 import { CONTEXT_SOURCE_VALUES } from '@core/contextSources/ContextSource.constants';
+import { REPO_TOOL_NAMES } from '@core/repoTools/RepoToolNames.constants';
 import { z } from 'zod';
 
 /**
@@ -39,6 +40,7 @@ const executeStageSchema = z.discriminatedUnion('type', [
 
 const profileSchema = z.object({
   plan: llmStageSchema.optional(),
+  execution_llm: llmStageSchema.optional(),
   execute: executeStageSchema.optional(),
   review: llmStageSchema.optional(),
 });
@@ -67,6 +69,16 @@ const pipelineSchema = z.object({
     .default([]),
 });
 
+const sessionToolYamlLevelSchema = z.enum(['allow', 'deny', 'ask', 'never', 'session']);
+
+const sessionConfigSchema = z.object({
+  tools: z.record(z.string(), sessionToolYamlLevelSchema).optional(),
+  tool_parse_worker: z.string().min(1).optional(),
+  tool_result_aggregate_worker: z.string().min(1).optional(),
+  /** Triggers a cheap “compress for the main model” pass on tool *output* when this length is met. */
+  tool_result_aggregate_min_chars: z.number().int().positive().max(2_000_000).optional(),
+});
+
 /**
  * Root schema for merged user + project YAML.
  * @see {@link mergeConfigRecordLayers} for precedence.
@@ -78,8 +90,29 @@ export const aimoConfigSchema = z
     profiles: z.record(z.string(), profileSchema).default({}),
     workers: z.record(z.string(), workerProfileSchema).default({}),
     pipeline: pipelineSchema.default({ keep_raw: true, shrinkers: [] }),
+    session: sessionConfigSchema.optional(),
   })
   .superRefine((data, ctx) => {
+    const assertSessionWorkers = (): void => {
+      const s = data.session;
+
+      for (const key of ['tool_parse_worker', 'tool_result_aggregate_worker'] as const) {
+        const wn = s?.[key];
+
+        if (wn === undefined) {
+          continue;
+        }
+
+        if (!Object.hasOwn(data.workers, wn)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `session.${key} "${wn}" is not defined in workers`,
+            path: ['session', key],
+          });
+        }
+      }
+    };
+
     const names = Object.keys(data.profiles);
 
     if (names.length > 0 && !Object.hasOwn(data.profiles, data.default_profile)) {
@@ -106,6 +139,22 @@ export const aimoConfigSchema = z
         });
       }
     }
+
+    const tools = data.session?.tools;
+
+    if (tools !== undefined) {
+      for (const key of Object.keys(tools)) {
+        if (!(REPO_TOOL_NAMES as readonly string[]).includes(key)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `session.tools: unknown tool "${key}" (expected one of: ${REPO_TOOL_NAMES.join(', ')})`,
+            path: ['session', 'tools', key],
+          });
+        }
+      }
+    }
+
+    assertSessionWorkers();
   });
 
 /** Parsed and validated `aimo` configuration. */

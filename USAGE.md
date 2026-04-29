@@ -204,6 +204,71 @@ aimo review --run 9f3c8e22
 aimo review --run 9f3c8e22 --json
 ```
 
+### `aimo session` / `aimo session resume <id>`
+
+Interactive readline loop with an append-only event log under `.aimo/sessions/<id>/`. **When your merged config exposes repo tools at `allow` or `session`, the plan-profile model can call `read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, and `show_artifact` itself** (OpenAI-style function calling). Each free-text line runs at least one completion; the loop may perform several rounds if the model keeps requesting tools, up to a high per-line iteration cap (safety guard against runaway tool loops) (then an `error` event with code `tool_iteration_limit`). Tools gated at `ask` still trigger the interactive approval prompt before execution.
+
+Slash commands remain available as a **manual override or for debugging**: `/help`, `/status`, `/use <runId>`, `/read <path>`, `/grep <pattern> [glob]`, `/tree [path]`, `/git-status`, `/git-diff [staged]`, `/show <path>`, `/approvals`, `/cancel`, `/resume`, `/exit`.
+
+Repo tools require YAML permission, for example:
+
+```yaml
+session:
+  tools:
+    read_file: allow
+    grep: allow
+    list_tree: allow
+    git_status: allow
+    git_diff: allow
+    show_artifact: allow
+```
+
+`/grep` uses a JavaScript regex source (first token); optional second token is a simple glob (`*.ts`, `**/*.md`, or suffix like `.md`). Search skips dot-directories and `node_modules`, `.git`, `.aimo`, etc.
+
+`/tree` lists files and directories under the repo root (or under an optional relative subdirectory). Output uses a trailing `/` on directory names; listing skips the same heavy directories as `/grep` (vendor trees, `.git`, `.aimo`, …) and applies depth, entry count, and output-size caps.
+
+`/git-status` runs `git status --short -b` in the session cwd (not the same as `/status`, which prints session reducer fields). Requires a git work tree; output is capped by bytes.
+
+`/git-diff` runs `git diff HEAD` by default, or `git diff --cached` when you pass `staged` as the only extra token. Output is capped by bytes.
+
+`/show <path>` reads a file under `.aimo/runs/<runId>/` for the run you bound with `/use <runId>` (path is relative to that directory, not an absolute filesystem path). Output uses the same byte cap as `/read`.
+
+#### `@`-mentions in free text
+
+Free-text turns may reference run artifacts inline. Resolved mentions append a `<CONTEXT name="@…">…</CONTEXT>` block to the chat message and emit a `tool_call` / `tool_result` pair on the event log.
+
+| Mention | Resolves to |
+|---------|-------------|
+| `@plan` | `plan.md` of the bound run (use `/use <runId>` first). |
+| `@diff` | Current `git diff HEAD` (working tree, not run-scoped). |
+| `@review` | `review.md` of the bound run. |
+| `@run:<id>` | `plan.md` of the named run id. |
+
+Path-style mentions (`@src/foo.ts`, `@src/dir/`, `@grep:<pat>`) are recognized but **not eagerly expanded** in v1 — they get a one-line stderr advisory and are stripped from the message. Phase 6 (model tool-calling) lights them up. Use `\@plan` to write a literal `@plan` token.
+
+#### Levels per tool and the interactive `ask` prompt
+
+YAML levels: `allow`, `session`, `ask`, `never`, `deny`. On a **new** session, non-`deny` tools get initial `approval` events so replay matches config.
+
+When a tool is gated at `ask`, the session prompts before running it:
+
+```
+session: tool "read_file" requires approval (read src/foo.ts) [a]llow once / [s]ession / [n]ever / [d]eny once:
+```
+
+- `a` — runs this turn only; the gate stays at `ask` for the next call.
+- `s` — runs and stays allowed for the rest of the session.
+- `n` — refuses this turn and persists as `deny` for the rest of the session.
+- `d` — refuses this turn; the gate stays at `ask` for the next call.
+
+EOF or any other reply is treated as `d` (one-shot deny). Only one prompt is open at a time; subsequent gated calls refuse with `another approval is pending` until the current prompt resolves.
+
+```sh
+aimo session
+aimo session --profile default
+aimo session resume 550e8400-e29b-41d4-a716-446655440000
+```
+
 ### `aimo run [task]`
 
 Full pipeline (plan → execute → review) in one command. Slice with `--from` / `--to`. Resume an existing run with `--run <id>` (required when not starting at `plan`).

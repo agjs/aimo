@@ -55,4 +55,25 @@ describe('InProcessFakeChatProvider', () => {
     expect(res.choices[0]?.finish_reason).toBe('stop');
     expect(res.usage).toEqual({ prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 });
   });
+
+  it('returns tool_calls when tools are present and the user line starts with tool:', async () => {
+    const fake = new InProcessFakeChatProvider();
+    const res = await fake.complete({
+      model: 'm',
+      messages: [{ role: 'user', content: 'tool: go' }],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'read_file',
+            description: 'read',
+            parameters: { type: 'object' },
+          },
+        },
+      ],
+    });
+    const msg = res.choices[0]?.message;
+    expect(msg?.tool_calls?.[0]?.function.name).toBe('read_file');
+    expect(res.choices[0]?.finish_reason).toBe('tool_calls');
+  });
 });

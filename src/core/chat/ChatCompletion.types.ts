@@ -4,29 +4,61 @@
  * @description OpenAI-style chat completion shapes shared by providers and the fake adapter.
  */
 
-/** Role string for a single chat turn. */
-export type TChatRole = 'system' | 'user' | 'assistant';
+/** Role string for a single chat turn (`'tool'` carries a tool result; see {@link IChatMessage}). */
+export type TChatRole = 'system' | 'user' | 'assistant' | 'tool';
+
+/** OpenAI-shape function-call descriptor a model may emit on an assistant message. */
+export interface IChatToolCall {
+  /** Provider-issued call id; round-tripped on the matching `role: 'tool'` message. */
+  readonly id: string;
+  /** Always `'function'` in v1. */
+  readonly type: 'function';
+  readonly function: {
+    /** Tool name (must match an entry in {@link IChatCompletionRequest.tools}). */
+    readonly name: string;
+    /** Raw JSON string of the function arguments (provider serializes; we parse). */
+    readonly arguments: string;
+  };
+}
 
 /**
  * One message in a chat completion request or response choice.
- * role - Speaker role.
- * content - UTF-8 message body (non-streaming v1).
+ * `role: 'tool'` carries a tool result and **must** include `tool_call_id`.
+ * Assistant messages may include `tool_calls` (the model is requesting tool runs);
+ * on `role: 'tool'`, `tool_call_id` matches the `id` of the originating call and `name` is optional.
  */
 export interface IChatMessage {
   readonly role: TChatRole;
   readonly content: string;
+  readonly tool_calls?: readonly IChatToolCall[] | undefined;
+  readonly tool_call_id?: string | undefined;
+  readonly name?: string | undefined;
+}
+
+/** OpenAI-shape function tool descriptor passed in `tools` on a request. */
+export interface IChatTool {
+  readonly type: 'function';
+  readonly function: {
+    readonly name: string;
+    readonly description: string;
+    /** JSON Schema for arguments (object shape). */
+    readonly parameters: Readonly<Record<string, unknown>>;
+  };
 }
 
 /**
- * Non-streaming chat completion request (subset of OpenAI-compatible APIs).
- * model - Logical model id from config (e.g. `stub`, `gpt-4o`).
- * messages - Prior turns plus the latest user message.
- * temperature - Optional sampling temperature when the backend supports it.
+ * Non-streaming chat completion request (subset of OpenAI-compatible APIs):
+ * `model` id, prior `messages`, optional `temperature`, and optional `tools` / `tool_choice` for function calling.
  */
 export interface IChatCompletionRequest {
   readonly model: string;
   readonly messages: readonly IChatMessage[];
   readonly temperature?: number;
+  readonly tools?: readonly IChatTool[];
+  readonly tool_choice?:
+    | 'auto'
+    | 'none'
+    | { readonly type: 'function'; readonly function: { readonly name: string } };
 }
 
 /**
@@ -46,8 +78,8 @@ export interface IChatCompletionResponse {
 /**
  * One completion alternative.
  * index - Choice index (OpenAI-compatible; usually `0`).
- * message - Assistant message content.
- * finish_reason - Provider stop reason string.
+ * message - Assistant message content (may include `tool_calls`).
+ * finish_reason - Provider stop reason string (e.g. `'stop'`, `'tool_calls'`).
  */
 export interface IChatCompletionChoice {
   readonly index: number;
