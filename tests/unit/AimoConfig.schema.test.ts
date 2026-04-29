@@ -92,4 +92,72 @@ describe('safeParseAimoConfig', () => {
     });
     expect(r.ok).toBe(true);
   });
+
+  it('rejects unknown session.tools key', () => {
+    const r = safeParseAimoConfig({
+      session: { tools: { not_a_tool: 'allow' } },
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) {
+      return;
+    }
+
+    expect(r.messages.join('\n')).toContain('session.tools');
+  });
+
+  it('accepts session.tools with known repo tool ids', () => {
+    const r = safeParseAimoConfig({
+      session: { tools: { read_file: 'allow', grep: 'deny' } },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects session.tool_parse_worker when worker is undefined', () => {
+    const r = safeParseAimoConfig({
+      session: { tool_parse_worker: 'nope' },
+      workers: { other: { provider: 'fake', model: 'stub' } },
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) {
+      return;
+    }
+
+    expect(r.messages.join('\n')).toContain('tool_parse_worker');
+  });
+
+  it('accepts session.tool_parse_worker referencing a worker', () => {
+    const r = safeParseAimoConfig({
+      session: { tool_parse_worker: 'w' },
+      workers: { w: { provider: 'fake', model: 'stub' } },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('accepts profiles.default.execution_llm', () => {
+    const r = safeParseAimoConfig({
+      profiles: {
+        default: {
+          plan: { provider: 'fake', model: 'stub' },
+          execution_llm: { provider: 'openrouter', model: 'x/y' },
+        },
+      },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects session.tool_result_aggregate_worker when worker is undefined', () => {
+    const r = safeParseAimoConfig({
+      session: { tool_result_aggregate_worker: 'nope' },
+      workers: { other: { provider: 'fake', model: 'stub' } },
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it('accepts session.tool_result_aggregate_worker and min chars', () => {
+    const r = safeParseAimoConfig({
+      session: { tool_result_aggregate_worker: 'w', tool_result_aggregate_min_chars: 50_000 },
+      workers: { w: { provider: 'fake', model: 'stub' } },
+    });
+    expect(r.ok).toBe(true);
+  });
 });

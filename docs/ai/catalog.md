@@ -14,6 +14,8 @@
 | `commands/execute.command.ts` | `aimo execute --run <id>` — delegated argv, `{plan_path}` substitution, `git diff HEAD` before/after, `execute.result.json` + diff files. |
 | `commands/review.command.ts` | `aimo review --run <id>` — reviewer chat, `review.md`, process exit from `VERDICT` (`0` / `2` / `3`). |
 | `commands/run.command.ts` | `aimo run` / `--dry-run` / `--json` / `--no-keep-raw` — thin wrapper around `runAimoRunPipeline`. |
+| `commands/session.command.ts` | `aimo session` / `aimo session resume <id>` — lock, REPL, merged config passed into loop. |
+| `session/sessionRepl.app.ts` | Readline `aimo>` loop; wires `BunRepoTools`, `mergeSessionToolsFromConfig`, `runSessionLoop`. |
 | `orchestrateRunPipeline.app.ts` | Re-exports `runPipeline/` (stable import path for `aimo run`). |
 | `runPipeline/runPipelineOrchestrator.app.ts` | Sequences plan / execute / review slices; exit codes per `ExitCodes`. |
 | `runPipeline/runPipelineTypes.app.ts` | `TRunPipelineOptions` (+ re-exports `TPipelineStageName`). |
@@ -35,7 +37,7 @@
 | `runPipeline/shared/runPipelineEmitHumanWriteComplete.app.ts` | Human stdout when slice ends (plan-only, execute-only, review). |
 | `runPipeline/shared/formatGitDiffHeadError.app.ts` | Merge optional `git diff HEAD` capture errors. |
 | `runPipeline/shared/formatStageSliceForHumans.app.ts` | Human-readable `plan → execute` slice label. |
-| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider`, `OpenAiCompatChatProvider` factory, stage `assert*` wiring including `assertRunPipelineWired`. |
+| `wireDefaults.ts` | Composition root — clock, cleanup, env, YAML loaders, `BunHttpPort`, `InProcessFakeChatProvider`, `OpenAiCompatChatProvider` factory, stage `assert*` wiring including `assertRunPipelineWired`, `assertSessionLoopWired`. |
 
 ## `src/core/`
 
@@ -46,13 +48,15 @@
 | `config/DotEnvParse.behavior.ts` | Pure `.env` text → map parser. |
 | `config/EnvPrecedence.behavior.ts` | Pure merge of env maps (process wins over files). |
 | `config/deepMergeRecord.behavior.ts` | Deep-merge YAML roots; project `aimo.yaml` overlays user `config.yaml`. |
-| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML; `workers`, `pipeline.shrinkers`, `PLAN_PATH_TEMPLATE_TOKEN` for argv + stdin sentinel. |
+| `config/AimoConfig.schema.ts` | Zod schema + `safeParseAimoConfig` for merged YAML; `workers`, `pipeline.shrinkers`, optional `session.tools`, `PLAN_PATH_TEMPLATE_TOKEN` for argv + stdin sentinel. |
 | `config/AimoInitTemplates.behavior.ts` | Commented starter YAML strings for `aimo init` (validated against schema). |
 | `lifecycle/CleanupRegistry.behavior.ts` | Pure LIFO cleanup registration (signals wired in `runtime/`). |
 | `chat/ChatCompletion.types.ts` | OpenAI-shaped chat completion request/response types (non-streaming v1). |
 | `ports/IClockPort.types.ts` | Time port (example port + contract tests). |
 | `ports/IChatCompletionPort.types.ts` | One-shot chat completion port (fake + future HTTP adapters). |
 | `ports/IHttpPort.types.ts` | JSON POST port for OpenAI-compatible HTTP providers. |
+| `ports/ISessionEventLogPort.types.ts` | Session `events.jsonl` append, replay, snapshot, lock hooks. |
+| `ports/IRepoToolsPort.types.ts` | Repo-scoped tools (`read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, `show_artifact`, …) for session slash commands. |
 | `plan/BuildPlanMessages.behavior.ts` | Planner system + user messages from task text. |
 | `plan/ResolvePlanStage.behavior.ts` | Resolve `profiles.*.plan` routing from merged config. |
 | `review/BuildReviewMessages.behavior.ts` | Reviewer system + user messages (plan, diff, transcript slots). |
@@ -80,6 +84,15 @@
 | `workers/ResolveWorker.behavior.ts` | Resolve `workers.<name>` from merged config. |
 | `workers/SerializeWorkersSidecar.behavior.ts` | Pretty JSON for `workers.json` sidecar. |
 | `workers/TruncateWorkerInput.behavior.ts` | Cap worker prompt input by character length. |
+| `repoTools/RepoToolNames.constants.ts` | `TToolName` union (`read_file`, `grep`, …). |
+| `repoTools/simpleGlobPredicate.behavior.ts` | Minimal glob filter for session `grep` path scoping. |
+| `repoTools/RepoWalkSkipDirs.constants.ts` | Shared skip-directory basename set for repo walks. |
+| `session/SessionEvents.types.ts` | Session event envelope + payload discriminated union. |
+| `session/SessionState.types.ts` | `ISessionState`, `TToolApprovalLevel`, usage fold types. |
+| `session/sessionReducer.behavior.ts` | Pure `(state, event) => state` replay fold. |
+| `session/deriveSessionSnapshot.behavior.ts` | Snapshot JSON derived from folded state. |
+| `session/mergeSessionToolsFromConfig.behavior.ts` | YAML `session.tools` → per-tool approval levels. |
+| `runs/AimoSessionPaths.constants.ts` | `.aimo/sessions/<id>/` relative path helpers. |
 
 ## `src/features/`
 
@@ -89,6 +102,13 @@
 | `reviewStage.feature.ts` | `runReviewChat` — one completion via `IChatCompletionPort` + `buildReviewMessages`. |
 | `workersStage.feature.ts` | `runWorkerChat` — one shrinker completion (truncate in/out, usage metadata). |
 | `runPipeline.feature.ts` | Re-exports pipeline stage hooks for composition; full `aimo run` lives under `app/`. |
+| `sessionLoop.feature.ts` | Interactive session main loop: replay, cold-start approvals, free-text turns. |
+| `sessionLoopSlash.feature.ts` | Slash dispatch (`/read`, `/grep`, `/tree`, `/git-status`, `/git-diff`, `/show`, `/use`, …) and YAML approval snapshot. |
+| `sessionLoopSlashRepoTools.feature.ts` | `/read`, `/grep`, `/tree` → `tool_call` / `tool_result` + stderr output. |
+| `sessionLoopSlashGitShow.feature.ts` | `/git-status`, `/git-diff`, `/show` → `tool_call` / `tool_result` + stderr output. |
+| `sessionLoopShared.feature.ts` | Append + fold + snapshot helpers shared by slash and chat paths. |
+| `sessionLoopDeps.types.ts` | `ISessionLoopDeps` bundle (avoids circular imports). |
+| `sessionTurnAbort.feature.ts` | `SessionTurnAbort` — per-turn `AbortController` for the REPL. |
 
 ## `src/providers/`
 
@@ -111,6 +131,14 @@
 | `RunWorkspace.bun.ts` | `prepareRunArtifactPaths` (mode 0o700 + `realpath` symlink check), `writePlanArtifacts`, `writeExecuteStageArtifacts` (+ stdout/stderr raw), `writeReviewMarkdown`. |
 | `RunProgressStderrStyle.bun.ts` | `createRunProgressStderr(mode)` factory + module-default writers — colored `run:` lines on stderr (respects `NO_COLOR`, `--progress-color`, TTY). |
 | `WorkersSidecarJson.bun.ts` | Write `.aimo/runs/<id>/workers.json`. |
+| `SessionEventLog.bun.ts` | `BunSessionEventLog` — append JSONL, replay, blob spill, snapshot write, `flock` lock. |
+| `SessionAdvisoryLock.bun.ts` | Advisory lock helper used by session log. |
+| `RepoTools.bun.ts` | `BunRepoTools` — bounded `read_file`, `grep`, `list_tree`, `git_status`, `git_diff`, and `show_artifact` under repo root. |
+| `runRepoGrep.bun.ts` | Directory walk, UTF-8 line scan, match/output caps. |
+| `runRepoListTree.bun.ts` | Depth-first listing with depth/entry/output caps. |
+| `runRepoGitStatus.bun.ts` | `git status --short -b` with stdout/stderr merge and byte cap. |
+| `runRepoGitDiff.bun.ts` | `git diff HEAD` or `git diff --cached` with byte cap. |
+| `runRepoShowArtifact.bun.ts` | Read file under `.aimo/runs/<id>/` with run-dir containment. |
 
 ## `src/shared/`
 
@@ -118,6 +146,8 @@
 | ------ | ---------------- |
 | `constants/Version.constants.ts` | Package version string. |
 | `test-fakes/FakeClockPort.fake.ts` | Deterministic clock for tests. |
+| `test-fakes/SessionEventLog.fake.ts` | In-memory session log for integration tests. |
+| `test-fakes/RepoTools.fake.ts` | Stub `IRepoToolsPort` for session repo-tool tests. |
 
 ## `tests/`
 
@@ -125,7 +155,7 @@
 | ---- | ---------------- |
 | `_helpers/spawnCli.ts` | Subprocess CLI runner: **absolute** `cli.ts` path so e2e `cwd` can be isolated fixture dirs. |
 | `_contracts/` | Port contract tests (Bun vs fake implementations). |
-| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `run`, `execute`, `review`, workers/shrinkers, `--version`, failure paths). |
+| `e2e/` | Black-box CLI tests (`init`, `doctor`, `ping`, `plan`, `run`, `execute`, `review`, `session`, workers/shrinkers, `--version`, failure paths). |
 | `e2e/_helpers/isolatedHomeProject.ts` | Fake `$HOME` + project dir for config e2e (no real `~/.config` reads). |
-| `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `InProcessFakeChat`, …). |
-| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `openAiCompatChat`, `delegatedExecute`, `runWorkspace`, wiring smoke). |
+| `unit/` | Fast pure tests (`deepMergeRecord`, `AimoConfig.schema`, `sessionReducer`, `mergeSessionToolsFromConfig`, `InProcessFakeChat`, …). |
+| `integration/` | Filesystem-backed tests (`configLoader`, `envLoader`, `fakeChat`, `openAiCompatChat`, `delegatedExecute`, `runWorkspace`, `sessionLoop`, wiring smoke). |

@@ -31,6 +31,7 @@ import { relativePlanMdPath, relativeReviewMdPath } from '@core/runs/AimoRunPath
 import { serializePlanManifestJson } from '@core/runs/RunManifestJson.behavior';
 import { runPlanChat } from '@features/planStage.feature';
 import { runReviewChat } from '@features/reviewStage.feature';
+import { runSessionLoop } from '@features/sessionLoop.feature';
 import { runWorkerChat } from '@features/workersStage.feature';
 import { InProcessFakeChatProvider } from '@providers/fake/InProcessFakeChat.provider';
 import { OpenAiCompatChatProvider } from '@providers/openaiCompat/OpenAiCompatChat.provider';
@@ -40,6 +41,12 @@ import { loadAimoConfigFromPaths, loadResolvedAimoConfig } from '@runtime/bun/Co
 import { runDelegatedArgv } from '@runtime/bun/DelegatedSpawn.bun';
 import { readGitDiffHeadText } from '@runtime/bun/GitDiffHead.bun';
 import { BunHttpPort } from '@runtime/bun/HttpPort.bun';
+import { BunRepoTools } from '@runtime/bun/RepoTools.bun';
+import { runRepoGitDiff } from '@runtime/bun/runRepoGitDiff.bun';
+import { runRepoGitStatus } from '@runtime/bun/runRepoGitStatus.bun';
+import { runRepoGrep } from '@runtime/bun/runRepoGrep.bun';
+import { runRepoListTree } from '@runtime/bun/runRepoListTree.bun';
+import { runRepoShowArtifact } from '@runtime/bun/runRepoShowArtifact.bun';
 import {
   prepareRunArtifactPaths,
   writeExecuteStageArtifacts,
@@ -227,6 +234,19 @@ export function assertRunPipelineWired(): void {
   void ensureVerdictForPersistedReview('wire\n\nVERDICT: pass\n', 'openai');
   void resolvePipelineStageRange('plan', 'review');
   void runWorkerChat;
+}
+
+/**
+ * Keeps interactive session loop wiring in the dependency graph for `aimo session`.
+ */
+export function assertSessionLoopWired(): void {
+  void runSessionLoop;
+  void BunRepoTools;
+  void runRepoGrep;
+  void runRepoListTree;
+  void runRepoGitStatus;
+  void runRepoGitDiff;
+  void runRepoShowArtifact;
 }
 
 export { loadResolvedEnv } from '@runtime/bun/EnvLoader.bun';

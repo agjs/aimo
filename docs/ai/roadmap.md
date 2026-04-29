@@ -22,6 +22,8 @@ Goal: end-to-end **plan → execute → review** on disk, **fake LLM** in CI, re
 | A8 | `aimo run` + `--dry-run` — orchestrates A5–A7; exit codes per [ExitCodes](../../src/core/contracts/ExitCodes.constants.ts) | Done (`run` + `--dry-run` + `--json`; e2e) |
 | A9 | Step-shaped flags (`--plan`, `--from`, etc.) so stages compose in shell | Not started |
 | A10 | Tests: schema, merge, fake provider, integration + **e2e** for CLI (`bun test`) | Partial (`aimo run` e2e added; extend as new commands land) |
+| A11 | `aimo session` / `session resume` — append-only `events.jsonl`, reducer, lock, REPL, docs in `spec-session.md` | Done |
+| A12 | Session: merged YAML `session.tools`, repo tools via slash + **model function-calling** (inner cap 128 completions / line), `BunRepoTools`, mentions, `ask` prompt | Done for this slice; Phase 3+ (streaming, checkpoints, subagents) in `spec-session.md` |
 
 **Exit criteria for A:** `bun run check` green; e2e runs `aimo` with fake provider in CI; README quickstart updated.
 

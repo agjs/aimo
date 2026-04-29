@@ -16,6 +16,7 @@ import { registerPingCommand } from './commands/ping.command';
 import { registerPlanCommand } from './commands/plan.command';
 import { registerReviewCommand } from './commands/review.command';
 import { registerRunCommand } from './commands/run.command';
+import { registerSessionCommand } from './commands/session.command';
 import {
   assertAimoConfigWiring,
   assertExecuteStageWired,
@@ -23,6 +24,7 @@ import {
   assertProviderPortsWired,
   assertReviewStageWired,
   assertRunPipelineWired,
+  assertSessionLoopWired,
   createCleanupRegistry,
   createDefaultClockPort,
   getCurrentSchemaVersion,
@@ -42,6 +44,7 @@ function assertCompositionWired(): void {
   assertProviderPortsWired();
   assertReviewStageWired();
   assertRunPipelineWired();
+  assertSessionLoopWired();
 }
 
 /**
@@ -71,6 +74,7 @@ export async function main(argv: readonly string[] = process.argv): Promise<void
   registerExecuteCommand(program);
   registerReviewCommand(program);
   registerRunCommand(program);
+  registerSessionCommand(program);
 
   const [, , ...rest] = argv;
 

@@ -8,6 +8,7 @@ import type {
   IChatCompletionChoice,
   IChatCompletionResponse,
   IChatCompletionUsage,
+  IChatToolCall,
   TChatRole,
 } from '@core/chat/ChatCompletion.types';
 
@@ -92,15 +93,56 @@ function parseOneOpenAiChoice(raw: unknown, fallbackIndex: number): IChatComplet
   const role = normalizeChatRole(msg.role);
   const content = typeof msg.content === 'string' ? msg.content : '';
   const finish_reason = typeof raw.finish_reason === 'string' ? raw.finish_reason : 'stop';
+  const toolCalls = parseToolCalls(msg.tool_calls);
+  const message =
+    toolCalls.length > 0 ? { role, content, tool_calls: toolCalls } : { role, content };
+
   return {
     index,
-    message: { role, content },
+    message,
     finish_reason,
   };
 }
 
+function parseToolCalls(raw: unknown): readonly IChatToolCall[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const out: IChatToolCall[] = [];
+
+  for (const entry of raw) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+
+    const id = typeof entry.id === 'string' ? entry.id : '';
+
+    if (id.length === 0) {
+      continue;
+    }
+
+    const fn = entry.function;
+
+    if (!isRecord(fn)) {
+      continue;
+    }
+
+    const name = typeof fn.name === 'string' ? fn.name : '';
+
+    if (name.length === 0) {
+      continue;
+    }
+
+    const args = typeof fn.arguments === 'string' ? fn.arguments : '';
+    out.push({ id, type: 'function', function: { name, arguments: args } });
+  }
+
+  return out;
+}
+
 function normalizeChatRole(role: unknown): TChatRole {
-  if (role === 'assistant' || role === 'user' || role === 'system') {
+  if (role === 'assistant' || role === 'user' || role === 'system' || role === 'tool') {
     return role;
   }
 

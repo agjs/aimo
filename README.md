@@ -41,6 +41,7 @@ aimo init --json
 aimo doctor --json
 aimo run "your task" --json
 aimo run "your task" --dry-run --json
+aimo session
 aimo --help
 ```
 

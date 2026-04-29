@@ -40,5 +40,15 @@ export function getLocalStarterAimoYaml(): string {
 schema_version: 1
 default_profile: default
 profiles: {}
+# session:
+#   tools:
+#     read_file: allow
+#     grep: allow
+#     list_tree: allow
+#     git_status: allow
+#     git_diff: allow
+#     show_artifact: allow
+#     # apply_patch / run_shell / web_search — not session-wired in v1
+#     # allow | deny | ask | never | session — see docs/ai/spec-session.md
 `;
 }
